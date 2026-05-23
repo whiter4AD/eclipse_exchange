@@ -589,6 +589,13 @@
     <div class="modal-title">Заявка на обмен</div>
     <div class="modal-body">
       <div class="form-group">
+        <label class="form-label">Ваш баланс</label>
+        <div class="amount-display">
+          <span>Доступно</span>
+          <span id="ex-balance-display" style="color:var(--green)">— USDT</span>
+        </div>
+      </div>
+      <div class="form-group">
         <label class="form-label">Сумма USDT</label>
         <input class="form-input" type="number" id="ex-usdt" placeholder="Мин. ~50.64 USDT" inputmode="decimal" oninput="updateExchangeCalc()">
       </div>
@@ -619,7 +626,11 @@
     <div class="modal-body">
       <div class="info-box">
         Принимаются чеки <strong>Crypto Bot</strong> и <strong>xRocket</strong>.<br>
-        Вставьте ссылку — баланс пополнится автоматически.
+        Укажите сумму и вставьте ссылку — менеджер проверит и зачислит.
+      </div>
+      <div class="form-group">
+        <label class="form-label">Сумма (USDT)</label>
+        <input class="form-input" type="number" id="dep-usdt" placeholder="Например: 54.00" inputmode="decimal" style="-moz-appearance:textfield">
       </div>
       <div class="form-group">
         <label class="form-label">Ссылка на чек</label>
@@ -643,6 +654,7 @@
   const MIN_RUB = 4000;
   const WALLET_ADDRESS = 'TAqDAUf1DT9ij7t3KV3nzUuEdSP5b2mVCM';
   const MANAGER_URL = 'https://t.me/m/lyYDeILpZGUy';
+  let currentBalance = null; // tracked globally after loadUser
 
   // ── Telegram WebApp init ────────────────────────────────────────────────────
   const tg = window.Telegram?.WebApp;
@@ -699,6 +711,7 @@
       document.getElementById('profile-balance').textContent = me.balance.toFixed(2) + ' USDT';
 
       // Wallet balance
+      currentBalance = me.balance;
       document.getElementById('wallet-balance').innerHTML =
         `${me.balance.toFixed(2)} <span>USDT</span>`;
 
@@ -786,6 +799,9 @@
       document.getElementById('ex-usdt').value = usdtVal;
       updateExchangeCalc();
     }
+    // Show current balance in modal
+    document.getElementById('ex-balance-display').textContent =
+      (currentBalance !== null ? currentBalance.toFixed(2) : '—') + ' USDT';
     openModal('modal-exchange');
   }
 
@@ -822,12 +838,24 @@
     if (!usdt || usdt * RATE < MIN_RUB) { showToast('Минимум 4 000 ₽ (~50.64 USDT)', 'error'); return; }
     if (!requisites || requisites.length < 5) { showToast('Укажите реквизиты для получения ₽', 'error'); return; }
 
+    // Client-side balance check
+    if (currentBalance !== null && usdt > currentBalance) {
+      closeModal('modal-exchange');
+      showToast(`Недостаточно средств. Баланс: ${currentBalance.toFixed(2)} USDT`, 'error');
+      setTimeout(() => openDepositModal(), 1200);
+      return;
+    }
+
     const btn = document.getElementById('ex-submit-btn');
     btn.disabled = true;
     btn.textContent = 'Отправка...';
 
     try {
-      await api('POST', '/api/exchange', { usdt, requisites });
+      const result = await api('POST', '/api/exchange', { usdt, requisites });
+      currentBalance = result.balance ?? (currentBalance - usdt);
+      document.getElementById('wallet-balance').innerHTML =
+        `${currentBalance.toFixed(2)} <span>USDT</span>`;
+      document.getElementById('ex-balance-display').textContent = currentBalance.toFixed(2) + ' USDT';
       closeModal('modal-exchange');
       showToast('Заявка создана! Ожидайте выплаты', 'success');
       document.getElementById('ex-usdt').value = '';
@@ -836,7 +864,13 @@
       document.getElementById('usdt-input').value = '';
       document.getElementById('rub-result').textContent = '—';
     } catch (e) {
-      showToast(e.message, 'error');
+      if (e.message.includes('Недостаточно') || e.message.includes('баланс')) {
+        closeModal('modal-exchange');
+        showToast(e.message, 'error');
+        setTimeout(() => openDepositModal(), 1200);
+      } else {
+        showToast(e.message, 'error');
+      }
     } finally {
       btn.disabled = false;
       btn.textContent = 'Создать заявку';
@@ -846,6 +880,9 @@
   // ── Submit deposit ──────────────────────────────────────────────────────────
   async function submitDeposit() {
     const url = document.getElementById('dep-url').value.trim();
+    const usdt = parseFloat(document.getElementById('dep-usdt').value);
+
+    if (!usdt || usdt <= 0) { showToast('Укажите сумму пополнения', 'error'); return; }
     if (!url) { showToast('Вставьте ссылку на чек', 'error'); return; }
 
     const btn = document.getElementById('dep-submit-btn');
@@ -853,10 +890,11 @@
     btn.textContent = 'Отправка...';
 
     try {
-      await api('POST', '/api/deposit', { check_url: url });
+      await api('POST', '/api/deposit', { check_url: url, usdt });
       closeModal('modal-deposit');
-      showToast('Чек отправлен! Скоро зачислим', 'success');
+      showToast('Заявка отправлена! Ожидайте зачисления', 'success');
       document.getElementById('dep-url').value = '';
+      document.getElementById('dep-usdt').value = '';
     } catch (e) {
       showToast(e.message, 'error');
     } finally {
@@ -896,7 +934,14 @@
   // ── Helpers ─────────────────────────────────────────────────────────────────
   function formatDate(iso) {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    // sqlite stores UTC without Z, add it
+    const str = iso.includes('T') ? iso : iso + 'Z';
+    const d = new Date(str);
+    // shift to MSK (UTC+3)
+    const msk = new Date(d.getTime() + 3 * 60 * 60 * 1000);
+    return msk.toLocaleString('ru-RU', { timeZone: 'UTC',
+      day: 'numeric', month: 'long', year: 'numeric',
+      hour: '2-digit', minute: '2-digit' }) + ' МСК';
   }
 
   // ── Init ────────────────────────────────────────────────────────────────────
