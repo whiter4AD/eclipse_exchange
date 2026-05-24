@@ -162,10 +162,29 @@
 
   <!-- USERS -->
   <div class="section" id="section-users">
-    <div class="section-header">Топ-10 по обменам</div>
+    <div class="section-header">Пользователи</div>
+
+    <div style="padding:0 20px 12px;display:flex;gap:8px;flex-wrap:wrap">
+      <input id="user-search" type="text" placeholder="Поиск по имени, @тегу, ID..."
+        style="flex:1;min-width:0;background:var(--bg2);border:0.5px solid var(--border2);border-radius:10px;
+               padding:10px 14px;font-family:'Space Grotesk',sans-serif;font-size:13px;
+               color:var(--text);outline:none;"
+        oninput="debounceSearch()">
+      <select id="user-sort" onchange="loadUsers()"
+        style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:10px;
+               padding:10px 12px;font-family:'Space Grotesk',sans-serif;font-size:12px;
+               color:var(--text3);outline:none;cursor:pointer;">
+        <option value="order_count">По сделкам</option>
+        <option value="balance">По балансу</option>
+        <option value="date">По дате</option>
+      </select>
+    </div>
+
     <div id="users-content" class="loading">
       <div class="spinner"></div>Загрузка...
     </div>
+
+    <div id="users-pagination" style="display:flex;gap:8px;padding:12px 20px;justify-content:center"></div>
   </div>
 
   <!-- BROADCAST -->
@@ -288,25 +307,54 @@
   }
 
   // ── Users ───────────────────────────────────────────────────────────────────
+  let usersOffset = 0;
+  const USERS_LIMIT = 50;
+  let searchTimer = null;
+
+  function debounceSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { usersOffset = 0; loadUsers(); }, 400);
+  }
+
   async function loadUsers() {
     const el = document.getElementById('users-content');
+    const pag = document.getElementById('users-pagination');
     el.innerHTML = '<div class="loading"><div class="spinner"></div>Загрузка...</div>';
+    pag.innerHTML = '';
+
+    const search = document.getElementById('user-search').value.trim();
+    const sort = document.getElementById('user-sort').value;
+
+    let url = `/api/admin/users?limit=${USERS_LIMIT}&offset=${usersOffset}&sort=${sort}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+
     try {
-      const users = await api('GET', '/api/admin/users');
+      const data = await api('GET', url);
+      const users = data.users;
+      const total = data.total;
+
       if (!users.length) {
         el.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-8 8-8s8 4 8 8"/></svg><p>Пользователей нет</p></div>';
         return;
       }
+
       el.innerHTML = users.map((u, i) => {
         const initials = ((u.first_name||'')[0]||'') + ((u.last_name||'')[0]||'');
         const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || 'Без имени';
-        const tag = u.username ? `@${u.username}` : `#${u.tg_id}`;
+        const tag = u.username ? `@${u.username}` : `ID: ${u.tg_id}`;
+        const globalRank = usersOffset + i + 1;
+        const statusBadge = u.blocked
+          ? `<span style="font-size:10px;color:var(--red);background:var(--red-dim);border:0.5px solid rgba(255,85,85,0.3);border-radius:4px;padding:2px 6px;">🚫 Заблокирован</span>`
+          : !u.agreed
+          ? `<span style="font-size:10px;color:var(--text3);background:var(--bg4);border:0.5px solid var(--border);border-radius:4px;padding:2px 6px;">⏳ Не принял соглашение</span>`
+          : '';
         return `<div class="user-item" id="user-${u.tg_id}">
-          <div class="user-rank ${i===0?'gold':''}">${i+1}</div>
+          <div class="user-rank ${globalRank<=3?'gold':''}">${globalRank}</div>
           <div class="user-avatar">${initials.toUpperCase()||'?'}</div>
           <div class="user-info">
             <div class="user-name">${name}</div>
             <div class="user-tag">${tag}</div>
+            ${statusBadge ? `<div style="margin-top:4px">${statusBadge}</div>` : ''}
             <div style="margin-top:4px"><span class="balance-chip">${u.balance.toFixed(2)} USDT</span></div>
             <button class="block-btn ${u.blocked?'unblock':'block'}" onclick="toggleBlock(${u.tg_id}, ${u.blocked?0:1})">
               ${u.blocked ? '✅ Разблокировать' : '🚫 Заблокировать'}
@@ -319,9 +367,34 @@
           </div>
         </div>`;
       }).join('');
+
+      // Pagination
+      const totalPages = Math.ceil(total / USERS_LIMIT);
+      const currentPage = Math.floor(usersOffset / USERS_LIMIT) + 1;
+      if (totalPages > 1) {
+        const btnStyle = `padding:8px 14px;border-radius:8px;border:0.5px solid var(--border2);
+          background:var(--bg2);color:var(--text);font-family:'Space Grotesk',sans-serif;
+          font-size:12px;font-weight:600;cursor:pointer;`;
+        const activeBtnStyle = `padding:8px 14px;border-radius:8px;border:0.5px solid rgba(212,168,67,0.4);
+          background:var(--gold-dim2);color:var(--gold);font-family:'Space Grotesk',sans-serif;
+          font-size:12px;font-weight:600;cursor:pointer;`;
+        pag.innerHTML = `
+          <button style="${btnStyle}" ${currentPage===1?'disabled':''} onclick="changePage(${currentPage-1})">← Назад</button>
+          <span style="padding:8px 14px;font-size:12px;color:var(--text3)">${currentPage} / ${totalPages} (${total})</span>
+          <button style="${btnStyle}" ${currentPage===totalPages?'disabled':''} onclick="changePage(${currentPage+1})">Вперёд →</button>
+        `;
+      } else {
+        pag.innerHTML = `<span style="font-size:12px;color:var(--text3)">Всего: ${total} пользователей</span>`;
+      }
     } catch(e) {
       el.innerHTML = `<div class="empty-state"><p style="color:var(--red)">${e.message}</p></div>`;
     }
+  }
+
+  function changePage(page) {
+    usersOffset = (page - 1) * USERS_LIMIT;
+    loadUsers();
+    document.getElementById('section-users').scrollIntoView({ behavior: 'smooth' });
   }
 
   async function toggleBlock(tgId, blocked) {
