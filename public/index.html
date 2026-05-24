@@ -770,13 +770,24 @@
       }
 
       list.innerHTML = orders.map(o => {
-        const isExchange = o.type === 'exchange';
+        // PostgreSQL returns numerics as strings — cast them
+        const usdt = Number(o.usdt) || 0;
+        const rub  = Number(o.rub)  || 0;
+
         const statusMap = { pending: 'В обработке', processing: 'Обрабатывается', done: 'Выполнено', cancelled: 'Отменено' };
-        const typeLabel = isExchange ? 'Обмен USDT → ₽' : 'Пополнение';
+        const typeMap   = { exchange: 'Обмен USDT → ₽', deposit: 'Пополнение', withdrawal: 'Вывод USDT' };
+        const typeLabel = typeMap[o.type] || o.type;
+
+        const iconPath = o.type === 'exchange'
+          ? '<path d="M3 9h12M9 3l6 6-6 6"/>'
+          : o.type === 'withdrawal'
+            ? '<path d="M9 15V3M3 9l6-6 6 6"/>'
+            : '<path d="M9 3v12M3 9l6 6 6-6"/>';
+
         return `<div class="order-item">
           <div class="order-icon">
             <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              ${isExchange ? '<path d="M3 9h12M9 3l6 6-6 6"/>' : '<path d="M9 3v12M3 9l6 6 6-6"/>'}
+              ${iconPath}
             </svg>
           </div>
           <div class="order-info">
@@ -784,14 +795,15 @@
             <div class="order-date">${formatDate(o.created_at)}</div>
           </div>
           <div class="order-amount">
-            <div class="order-usdt">${o.usdt > 0 ? o.usdt.toFixed(2) + ' USDT' : '—'}</div>
-            ${o.rub > 0 ? `<div class="order-rub">${Math.round(o.rub).toLocaleString('ru-RU')} ₽</div>` : ''}
+            <div class="order-usdt">${usdt > 0 ? usdt.toFixed(2) + ' USDT' : '—'}</div>
+            ${rub > 0 ? `<div class="order-rub">${Math.round(rub).toLocaleString('ru-RU')} ₽</div>` : ''}
             <div class="order-status ${o.status}">${statusMap[o.status] || o.status}</div>
           </div>
         </div>`;
       }).join('');
     } catch (e) {
       console.warn('Could not load orders:', e.message);
+      document.getElementById('orders-list').innerHTML = `<div class="history-empty"><p>Ошибка загрузки</p><span>${e.message}</span></div>`;
     }
   }
 
