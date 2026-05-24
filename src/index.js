@@ -356,13 +356,42 @@ app.get('/api/admin/stats', adminMiddleware, async (req, res) => {
 });
 
 app.get('/api/admin/users', adminMiddleware, async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 100, 100);
+  const offset = Number(req.query.offset) || 0;
+  const search = req.query.search ? `%${req.query.search}%` : null;
+  const sort = req.query.sort === 'balance' ? 'u.balance' :
+               req.query.sort === 'date' ? 'u.created_at' : 'order_count';
+
+  const whereClause = search
+    ? `WHERE (u.username ILIKE $3 OR u.first_name ILIKE $3 OR CAST(u.tg_id AS TEXT) LIKE $3)`
+    : '';
+
+  const params = search ? [limit, offset, search] : [limit, offset];
+
   const result = await query(`
-    SELECT u.*, COUNT(o.id) as order_count,
-      COALESCE(SUM(CASE WHEN o.type='exchange' AND o.status='done' THEN o.usdt ELSE 0 END),0) as volume_usdt
+    SELECT u.tg_id, u.username, u.first_name, u.last_name,
+           u.balance, u.agreed, u.blocked, u.created_at,
+           COUNT(o.id) as order_count,
+           COALESCE(SUM(CASE WHEN o.type='exchange' AND o.status='done' THEN o.usdt ELSE 0 END),0) as volume_usdt
     FROM users u LEFT JOIN orders o ON u.tg_id=o.tg_id
-    WHERE u.agreed=1 GROUP BY u.tg_id ORDER BY order_count DESC LIMIT 10
-  `);
-  res.json(result.rows.map(u => ({ ...u, balance:Number(u.balance), volume_usdt:Number(u.volume_usdt), order_count:Number(u.order_count) })));
+    ${whereClause}
+    GROUP BY u.tg_id
+    ORDER BY ${sort} DESC
+    LIMIT $1 OFFSET $2
+  `, params);
+
+  const total = await query(`SELECT COUNT(*) as c FROM users`);
+
+  res.json({
+    users: result.rows.map(u => ({
+      ...u,
+      balance: Number(u.balance),
+      volume_usdt: Number(u.volume_usdt),
+      order_count: Number(u.order_count)
+    })),
+    total: Number(total.rows[0].c),
+    limit, offset
+  });
 });
 
 app.post('/api/admin/block', adminMiddleware, async (req, res) => {
@@ -391,4 +420,3 @@ app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../public/index.ht
 initDB().then(() => {
   app.listen(PORT, () => console.log(`\n🌑 Eclipse Exchange on port ${PORT}\n`));
 }).catch(e => { console.error('DB init failed:', e); process.exit(1); });
-
