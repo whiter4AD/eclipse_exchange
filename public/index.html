@@ -370,7 +370,7 @@
 
     <div class="stats-row">
       <div class="stat-card"><div class="stat-num" style="color:var(--gold)" id="stat-deals">—</div><div class="stat-label">Сделок</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:var(--green)">99%</div><div class="stat-label">Успех</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--green)">100%</div><div class="stat-label">Успех</div></div>
       <div class="stat-card"><div class="stat-num">~15м</div><div class="stat-label">Среднее</div></div>
     </div>
 
@@ -489,9 +489,9 @@
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 1v12M1 7h12" stroke-linecap="round"/></svg>
           Пополнить
         </button>
-        <button class="wallet-btn" onclick="openExchangeModal()">
+        <button class="wallet-btn" onclick="openWithdrawalModal()">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 7h10M8 3l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Обменять
+          Вывести
         </button>
       </div>
     </div>
@@ -644,10 +644,43 @@
   </div>
 </div>
 
-<!-- Toast -->
-<div class="toast" id="toast">
-  <span id="toast-msg"></span>
+<!-- ── WITHDRAWAL MODAL ── -->
+<div class="modal-overlay" id="modal-withdrawal" onclick="closeModalOutside(event,'modal-withdrawal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Вывод USDT</div>
+    <div class="modal-body">
+      <div class="info-box">
+        После подтверждения заявки менеджер отправит вам чек <strong>Crypto Bot</strong> или <strong>xRocket</strong> в личные сообщения.
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ваш баланс</label>
+        <div class="amount-display">
+          <span>Доступно</span>
+          <span id="wd-balance-display" style="color:var(--green)">— USDT</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Сумма вывода (USDT)</label>
+        <input class="form-input" type="number" id="wd-usdt" placeholder="Введите сумму" inputmode="decimal" oninput="updateWithdrawalCalc()" style="-moz-appearance:textfield">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Вы получите примерно</label>
+        <div class="amount-display">
+          <span>После вывода</span>
+          <span id="wd-remain">—</span>
+        </div>
+      </div>
+      <button class="modal-submit" id="wd-submit-btn" onclick="submitWithdrawal()">
+        Вывести USDT
+      </button>
+      <div class="modal-note">Чек придёт в Telegram · Обычно в течение 15–30 мин</div>
+    </div>
+  </div>
 </div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><span id="toast-msg"></span></div>
 
 <script>
   const RATE = 79;
@@ -903,7 +936,44 @@
     }
   }
 
-  // ── Support ─────────────────────────────────────────────────────────────────
+  function openWithdrawalModal() {
+    document.getElementById('wd-balance-display').textContent =
+      (currentBalance !== null ? currentBalance.toFixed(2) : '—') + ' USDT';
+    document.getElementById('wd-usdt').value = '';
+    document.getElementById('wd-remain').textContent = '—';
+    openModal('modal-withdrawal');
+  }
+
+  function updateWithdrawalCalc() {
+    const usdt = parseFloat(document.getElementById('wd-usdt').value);
+    const remainEl = document.getElementById('wd-remain');
+    if (!usdt || usdt <= 0 || currentBalance === null) { remainEl.textContent = '—'; return; }
+    const remain = currentBalance - usdt;
+    if (remain < 0) { remainEl.textContent = '❌ Недостаточно'; remainEl.style.color = 'var(--red)'; return; }
+    remainEl.textContent = remain.toFixed(2) + ' USDT';
+    remainEl.style.color = 'var(--gold)';
+  }
+
+  async function submitWithdrawal() {
+    const usdt = parseFloat(document.getElementById('wd-usdt').value);
+    if (!usdt || usdt <= 0) { showToast('Укажите сумму вывода', 'error'); return; }
+    if (currentBalance !== null && usdt > currentBalance) {
+      showToast(`Недостаточно средств. Баланс: ${currentBalance.toFixed(2)} USDT`, 'error'); return;
+    }
+    const btn = document.getElementById('wd-submit-btn');
+    btn.disabled = true; btn.textContent = 'Отправка...';
+    try {
+      const result = await api('POST', '/api/withdrawal', { usdt });
+      currentBalance = result.balance ?? (currentBalance - usdt);
+      document.getElementById('wallet-balance').innerHTML = `${currentBalance.toFixed(2)} <span>USDT</span>`;
+      closeModal('modal-withdrawal');
+      showToast('Заявка отправлена! Ожидайте чек в Telegram', 'success');
+    } catch(e) {
+      showToast(e.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Вывести USDT';
+    }
+  }
   function openSupport() {
     if (tg) {
       tg.openTelegramLink(MANAGER_URL);
