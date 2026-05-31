@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const RATE = 79;
-const MIN_RUB = 4000;
+const MIN_RUB = 5000;
 const TERMS_URL = 'https://telegra.ph/Eclipse-Exchange-05-23';
 
 if (!BOT_TOKEN) { console.error('❌ BOT_TOKEN not set.'); process.exit(1); }
@@ -320,6 +320,54 @@ app.post('/api/deposit', authMiddleware, async (req, res) => {
     [user.tg_id, usdtAmount, check_url.trim()]);
   notifyManager(r.rows[0], user);
   res.json({ success:true, order:r.rows[0] });
+});
+
+// POST /api/deposit/fiat — SIM / QR / СБП deposit
+app.post('/api/deposit/fiat', authMiddleware, async (req, res) => {
+  const user = await upsertUser(req.tgUser);
+  const { dep_type, operator, rub_per_number, phones, total_rub, usdt_amount, qr_image } = req.body;
+
+  if (!dep_type) return res.status(400).json({ error: 'Тип пополнения обязателен' });
+  if (!total_rub || total_rub <= 0) return res.status(400).json({ error: 'Укажите сумму' });
+
+  const r = await query(
+    `INSERT INTO orders (tg_id, type, usdt, rub, requisites) VALUES ($1, 'deposit', $2, $3, $4) RETURNING *`,
+    [user.tg_id, usdt_amount, total_rub, dep_type]
+  );
+  const order = r.rows[0];
+
+  const managerChatId = process.env.MANAGER_CHAT_ID;
+  if (managerChatId) {
+    const userTag = user.username ? `@${user.username}` : `#${user.tg_id}`;
+    let text = `📥 Пополнение (${dep_type})\n\n`;
+    text += `👤 ${userTag} (${user.first_name || ''})\n`;
+    text += `🆔 Заявка: #${order.id}\n`;
+    text += `💵 К зачислению: ${Number(usdt_amount).toFixed(2)} USDT\n`;
+    text += `💴 Сумма: ${total_rub} ₽\n`;
+    if (dep_type === 'SIM') {
+      text += `📱 Оператор: ${operator || '—'}\n`;
+      text += `☎️ Номера: ${(phones || []).join(', ')}\n`;
+      text += `💰 На номер: ${rub_per_number} ₽\n`;
+    }
+    text += `⏰ ${formatMsk(order.created_at)}`;
+
+    const keyboard = { reply_markup: { inline_keyboard: [[
+      { text: '✅ Выполнено', callback_data: `done_${order.id}` },
+      { text: '❌ Отклонить', callback_data: `cancel_${order.id}` },
+    ]]}};
+
+    try {
+      if (dep_type === 'QR' && qr_image) {
+        const base64Data = qr_image.replace(/^data:image\/\w+;base64,/, '');
+        const imgBuffer = Buffer.from(base64Data, 'base64');
+        await bot.sendPhoto(managerChatId, imgBuffer, { caption: text, ...keyboard });
+      } else {
+        await bot.sendMessage(managerChatId, text, keyboard);
+      }
+    } catch(e) { console.error('Fiat notify error:', e.message); }
+  }
+
+  res.json({ success: true, order });
 });
 
 app.post('/api/withdrawal', authMiddleware, async (req, res) => {
