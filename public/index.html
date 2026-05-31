@@ -323,7 +323,30 @@
   .profile-stat-label { font-size: 13px; color: var(--text3); }
   .profile-stat-value { font-size: 13px; font-weight: 600; }
 
-  /* Skeleton loader */
+  /* ── Deposit tabs ── */
+  .dep-tab {
+    flex:1; padding:9px 6px; border-radius:10px; background:var(--bg3);
+    border:0.5px solid var(--border); font-size:12px; font-weight:600;
+    color:var(--text3); cursor:pointer; font-family:'Space Grotesk',sans-serif;
+    transition:all 0.15s;
+  }
+  .dep-tab.active { background:var(--gold-dim2); border-color:rgba(212,168,67,0.4); color:var(--gold); }
+  .sim-method {
+    flex:1; padding:9px; border-radius:10px; background:var(--bg3);
+    border:0.5px solid var(--border); font-size:13px; font-weight:600;
+    color:var(--text3); cursor:pointer; font-family:'Space Grotesk',sans-serif;
+    transition:all 0.15s;
+  }
+  .sim-method.active { background:var(--gold-dim2); border-color:rgba(212,168,67,0.4); color:var(--gold); }
+  .op-btn {
+    padding:9px 6px; border-radius:10px; background:var(--bg3);
+    border:0.5px solid var(--border); font-size:12px; font-weight:600;
+    color:var(--text3); cursor:pointer; font-family:'Space Grotesk',sans-serif;
+    transition:all 0.15s; text-align:center;
+  }
+  .op-btn.active { background:var(--gold-dim2); border-color:rgba(212,168,67,0.4); color:var(--gold); }
+
+  /* Skeleton */
   .skeleton {
     background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%);
     background-size: 200% 100%;
@@ -395,8 +418,8 @@
           <div class="calc-currency">₽ RUB</div>
         </div>
       </div>
-      <div class="calc-warning" id="calc-warning">Минимальная сумма обмена — 4 000 ₽</div>
-      <div class="calc-min-hint">Мин. сумма: 4 000 ₽ · Курс: 79 ₽/USDT</div>
+      <div class="calc-warning" id="calc-warning">Минимальная сумма обмена — 5 000 ₽</div>
+      <div class="calc-min-hint">Мин. сумма: 5 000 ₽ · Курс: 79 ₽/USDT</div>
     </div>
 
     <div class="cta-wrap">
@@ -419,7 +442,7 @@
         <div class="step-num">02</div>
         <div class="step-content">
           <div class="step-title">Переведите USDT</div>
-          <div class="step-desc">Отправьте USDT на наш TRC-20 кошелёк или вставьте чек из Crypto Bot / xRocket</div>
+          <div class="step-desc">Вставьте чек из Crypto Bot или xRocket — менеджер проверит и зачислит баланс</div>
         </div>
       </div>
       <div class="step">
@@ -439,7 +462,7 @@
         </div>
         <div class="action-text">
           <div class="action-title">Обменять USDT → ₽</div>
-          <div class="action-sub">Курс 79 ₽ · Мин. 4 000 ₽</div>
+          <div class="action-sub">Курс 79 ₽ · Мин. 5 000 ₽</div>
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
@@ -460,6 +483,26 @@
         <div class="action-text">
           <div class="action-title">История сделок</div>
           <div class="action-sub">Все ваши операции</div>
+        </div>
+        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
+      </div>
+      <div class="action-item" onclick="openModal('modal-sim')">
+        <div class="action-icon gray">
+          <svg viewBox="0 0 20 20" fill="none" stroke="#9A9590" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="10" height="16" rx="2"/><path d="M8 15h4"/></svg>
+        </div>
+        <div class="action-text">
+          <div class="action-title">Пополнение SIM / СБП</div>
+          <div class="action-sub">Курс 60 ₽/USDT · Баланс телефона</div>
+        </div>
+        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
+      </div>
+      <div class="action-item" onclick="openModal('modal-qr')">
+        <div class="action-icon gray">
+          <svg viewBox="0 0 20 20" fill="none" stroke="#9A9590" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM13 13h4M15 11v4M17 11h-2"/></svg>
+        </div>
+        <div class="action-text">
+          <div class="action-title">Оплата QR</div>
+          <div class="action-sub">Курс 60 ₽/USDT · Прикрепите QR-код</div>
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
@@ -493,19 +536,6 @@
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 7h10M8 3l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Вывести
         </button>
-      </div>
-    </div>
-    <div class="section-header">Адрес кошелька (TRC-20)</div>
-    <div class="actions">
-      <div class="action-item" onclick="copyAddress()">
-        <div class="action-icon gray">
-          <svg viewBox="0 0 20 20" fill="none" stroke="#9A9590" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M3 13V5a2 2 0 0 1 2-2h8"/></svg>
-        </div>
-        <div class="action-text">
-          <div class="action-title" style="font-family:'JetBrains Mono',monospace;font-size:12px">TAqDAUf1DT9ij7t3KV3nzUuEdSP5b2mVCM</div>
-          <div class="action-sub">Нажмите для копирования</div>
-        </div>
-        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
     </div>
   </div>
@@ -597,7 +627,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Сумма USDT</label>
-        <input class="form-input" type="number" id="ex-usdt" placeholder="Мин. ~50.64 USDT" inputmode="decimal" oninput="updateExchangeCalc()">
+        <input class="form-input" type="number" id="ex-usdt" placeholder="Мин. ~64 USDT" inputmode="decimal" oninput="updateExchangeCalc()">
       </div>
       <div class="form-group">
         <label class="form-label">Вы получите</label>
@@ -630,15 +660,13 @@
       </div>
       <div class="form-group">
         <label class="form-label">Сумма (USDT)</label>
-        <input class="form-input" type="number" id="dep-usdt" placeholder="Например: 54.00" inputmode="decimal" style="-moz-appearance:textfield">
+        <input class="form-input" type="number" id="dep-usdt" placeholder="Например: 63.00" inputmode="decimal" style="-moz-appearance:textfield">
       </div>
       <div class="form-group">
         <label class="form-label">Ссылка на чек</label>
         <input class="form-input" type="url" id="dep-url" placeholder="https://t.me/CryptoBot?start=..." inputmode="url">
       </div>
-      <button class="modal-submit" id="dep-submit-btn" onclick="submitDeposit()">
-        Зачислить
-      </button>
+      <button class="modal-submit" id="dep-submit-btn" onclick="submitDeposit('check')">Зачислить</button>
       <div class="modal-note">После проверки менеджером USDT зачислятся на ваш баланс</div>
     </div>
   </div>
@@ -665,7 +693,7 @@
         <input class="form-input" type="number" id="wd-usdt" placeholder="Введите сумму" inputmode="decimal" oninput="updateWithdrawalCalc()" style="-moz-appearance:textfield">
       </div>
       <div class="form-group">
-        <label class="form-label">Вы получите примерно</label>
+        <label class="form-label">Остаток</label>
         <div class="amount-display">
           <span>После вывода</span>
           <span id="wd-remain">—</span>
@@ -679,13 +707,90 @@
   </div>
 </div>
 
+<!-- ── SIM MODAL ── -->
+<div class="modal-overlay" id="modal-sim" onclick="closeModalOutside(event,'modal-sim')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Пополнение SIM / СБП</div>
+    <div class="modal-body">
+      <div class="info-box" style="margin-bottom:14px">
+        Пополнение баланса телефона.<br>
+        Курс: <strong>1 USDT = 60 ₽</strong>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Сумма пополнения в рублях</label>
+        <input class="form-input" type="number" id="sim-rub" placeholder="Например, 120" inputmode="decimal" oninput="updateSimCalc()" style="-moz-appearance:textfield">
+        <div style="font-size:12px;color:var(--text3);margin-top:6px" id="sim-hint">Для SIM сумма указывается в рублях на один номер.</div>
+      </div>
+      <div class="form-group" id="sim-phones-group" style="display:none">
+        <label class="form-label">Номера для SIM</label>
+        <textarea class="form-input" id="sim-phones" placeholder="+79990000001, +79990000002" rows="3" style="resize:none;font-size:13px" oninput="updateSimCalc()"></textarea>
+        <div style="font-size:12px;color:var(--text3);margin-top:6px">Можно указать несколько номеров через запятую.</div>
+      </div>
+      <div style="background:var(--bg3);border:0.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:14px">
+        <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Итого к оплате</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--text)" id="sim-total-usdt">0$</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px">По курсу 1$ — 60₽</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+          <div style="background:var(--bg4);border-radius:8px;padding:10px">
+            <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Способ</div>
+            <div style="font-size:14px;font-weight:700" id="sim-summary-method">СБП</div>
+          </div>
+          <div style="background:var(--bg4);border-radius:8px;padding:10px">
+            <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Номеров</div>
+            <div style="font-size:14px;font-weight:700" id="sim-summary-count">—</div>
+          </div>
+        </div>
+      </div>
+      <button class="modal-submit" id="sim-submit-btn" onclick="submitDeposit('sim')">Продолжить</button>
+      <div class="modal-note">После проверки менеджер зачислит баланс</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── QR MODAL ── -->
+<div class="modal-overlay" id="modal-qr" onclick="closeModalOutside(event,'modal-qr')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Оплата QR</div>
+    <div class="modal-body">
+      <div class="info-box" style="margin-bottom:14px">
+        Оплата через <strong>QR-код</strong>.<br>
+        Курс: <strong>1 USDT = 60 ₽</strong>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Сумма пополнения в рублях</label>
+        <input class="form-input" type="number" id="qr-rub" placeholder="Например, 150" inputmode="decimal" oninput="updateQrCalc()" style="-moz-appearance:textfield">
+        <div style="font-size:12px;color:var(--text3);margin-top:6px">Для QR сумма указывается в рублях.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">QR для пополнения</label>
+        <div style="border:1px dashed rgba(212,168,67,0.35);border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:var(--bg3)" onclick="document.getElementById('qr-file').click()">
+          <input type="file" id="qr-file" accept="image/*" style="display:none" onchange="handleQrFile(this)">
+          <div id="qr-preview-wrap">
+            <div style="font-size:26px;margin-bottom:8px">📷</div>
+            <div style="font-size:13px;font-weight:600;color:var(--gold)">Прикрепить QR</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Файл ещё не выбран</div>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--bg3);border:0.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:14px">
+        <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Итого к оплате</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--text)" id="qr-total-usdt">0$</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px">По курсу 1$ — 60₽</div>
+      </div>
+      <button class="modal-submit" id="qr-submit-btn" onclick="submitDeposit('qr')">Продолжить</button>
+      <div class="modal-note">После проверки менеджер зачислит баланс</div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
 
 <script>
   const RATE = 79;
-  const MIN_RUB = 4000;
-  const WALLET_ADDRESS = 'TAqDAUf1DT9ij7t3KV3nzUuEdSP5b2mVCM';
+  const MIN_RUB = 5000;
   const MANAGER_URL = 'https://t.me/m/lyYDeILpZGUy';
   let currentBalance = null; // tracked globally after loadUser
 
@@ -880,7 +985,7 @@
     const usdt = parseFloat(document.getElementById('ex-usdt').value);
     const requisites = document.getElementById('ex-requisites').value.trim();
 
-    if (!usdt || usdt * RATE < MIN_RUB) { showToast('Минимум 4 000 ₽ (~50.64 USDT)', 'error'); return; }
+    if (!usdt || usdt * RATE < MIN_RUB) { showToast('Минимум 5 000 ₽ (~64 USDT)', 'error'); return; }
     if (!requisites || requisites.length < 5) { showToast('Укажите реквизиты для получения ₽', 'error'); return; }
 
     // Client-side balance check
@@ -922,29 +1027,139 @@
     }
   }
 
+  // ── Deposit tabs ────────────────────────────────────────────────────────────
+  const SIM_RATE = 60; // 1 USDT = 60 RUB for SIM/QR
+  let selectedOperator = 'tele2';
+  let simMethod = 'sbp';
+  let qrFileBase64 = null;
+
+  function switchDepTab(tab) {
+    ['check','sim','qr'].forEach(t => {
+      document.getElementById('dep-tab-' + t).classList.toggle('active', t === tab);
+      document.getElementById('dep-panel-' + t).style.display = t === tab ? 'block' : 'none';
+    });
+  }
+
+  function switchSimMethod(method) {
+    simMethod = method;
+    document.getElementById('sim-method-sbp').classList.toggle('active', method === 'sbp');
+    document.getElementById('sim-method-sim').classList.toggle('active', method === 'sim');
+    document.getElementById('sim-operator-group').style.display = method === 'sim' ? 'block' : 'none';
+    document.getElementById('sim-phones-group').style.display = method === 'sim' ? 'block' : 'none';
+    document.getElementById('sim-hint').textContent = method === 'sbp'
+      ? 'Для СБП сумма указывается в рублях.' : 'Для SIM сумма указывается в рублях на один номер.';
+    document.getElementById('sim-summary-method').textContent = method.toUpperCase();
+    updateSimCalc();
+  }
+
+  function selectOperator(btn, op) {
+    document.querySelectorAll('.op-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedOperator = op;
+  }
+
+  function updateSimCalc() {
+    const rub = parseFloat(document.getElementById('sim-rub').value) || 0;
+    const phones = document.getElementById('sim-phones').value
+      .split(',').map(p => p.trim()).filter(Boolean);
+    const count = simMethod === 'sim' ? (phones.length || 0) : 1;
+    const totalRub = rub * count;
+    const usdt = totalRub / SIM_RATE;
+    document.getElementById('sim-total-usdt').textContent = usdt > 0 ? usdt.toFixed(2) + '$' : '0$';
+    document.getElementById('sim-summary-count').textContent = simMethod === 'sim' ? count : '—';
+  }
+
+  function updateQrCalc() {
+    const rub = parseFloat(document.getElementById('qr-rub').value) || 0;
+    const usdt = rub / SIM_RATE;
+    document.getElementById('qr-total-usdt').textContent = usdt > 0 ? usdt.toFixed(2) + '$' : '0$';
+  }
+
+  function handleQrFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      qrFileBase64 = e.target.result;
+      document.getElementById('qr-preview-wrap').innerHTML = `
+        <img src="${qrFileBase64}" style="max-width:100%;max-height:150px;border-radius:8px;object-fit:contain">
+        <div style="font-size:11px;color:var(--green);margin-top:8px">✅ ${file.name}</div>`;
+    };
+    reader.readAsDataURL(file);
+  }
+
   // ── Submit deposit ──────────────────────────────────────────────────────────
-  async function submitDeposit() {
-    const url = document.getElementById('dep-url').value.trim();
-    const usdt = parseFloat(document.getElementById('dep-usdt').value);
+  async function submitDeposit(tab) {
+    if (tab === 'check') {
+      const url = document.getElementById('dep-url').value.trim();
+      const usdt = parseFloat(document.getElementById('dep-usdt').value);
+      if (!usdt || usdt <= 0) { showToast('Укажите сумму пополнения', 'error'); return; }
+      if (!url) { showToast('Вставьте ссылку на чек', 'error'); return; }
 
-    if (!usdt || usdt <= 0) { showToast('Укажите сумму пополнения', 'error'); return; }
-    if (!url) { showToast('Вставьте ссылку на чек', 'error'); return; }
+      const btn = document.getElementById('dep-submit-btn');
+      btn.disabled = true; btn.textContent = 'Отправка...';
+      try {
+        await api('POST', '/api/deposit', { check_url: url, usdt, type: 'check' });
+        closeModal('modal-deposit');
+        showToast('Заявка отправлена! Ожидайте зачисления', 'success');
+        document.getElementById('dep-url').value = '';
+        document.getElementById('dep-usdt').value = '';
+      } catch(e) { showToast(e.message, 'error'); }
+      finally { btn.disabled = false; btn.textContent = 'Зачислить'; }
 
-    const btn = document.getElementById('dep-submit-btn');
-    btn.disabled = true;
-    btn.textContent = 'Отправка...';
+    } else if (tab === 'sim') {
+      const rub = parseFloat(document.getElementById('sim-rub').value);
+      const phones = document.getElementById('sim-phones').value.trim();
+      if (!rub || rub <= 0) { showToast('Укажите сумму пополнения', 'error'); return; }
+      if (simMethod === 'sim' && !phones) { showToast('Укажите номера телефонов', 'error'); return; }
 
-    try {
-      await api('POST', '/api/deposit', { check_url: url, usdt });
-      closeModal('modal-deposit');
-      showToast('Заявка отправлена! Ожидайте зачисления', 'success');
-      document.getElementById('dep-url').value = '';
-      document.getElementById('dep-usdt').value = '';
-    } catch (e) {
-      showToast(e.message, 'error');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Зачислить';
+      const phoneList = simMethod === 'sim' ? phones.split(',').map(p=>p.trim()).filter(Boolean) : [];
+      const totalRub = rub * (simMethod === 'sim' ? phoneList.length || 1 : 1);
+      const usdt = totalRub / SIM_RATE;
+
+      const btn = document.getElementById('sim-submit-btn');
+      btn.disabled = true; btn.textContent = 'Отправка...';
+      try {
+        await api('POST', '/api/deposit/fiat', {
+          dep_type: simMethod === 'sbp' ? 'СБП' : 'SIM',
+          operator: simMethod === 'sim' ? selectedOperator : null,
+          rub_per_number: rub,
+          phones: phoneList,
+          total_rub: totalRub,
+          usdt_amount: usdt,
+        });
+        closeModal('modal-sim');
+        showToast('Заявка отправлена! Ожидайте зачисления', 'success');
+        document.getElementById('sim-rub').value = '';
+        document.getElementById('sim-phones').value = '';
+        document.getElementById('sim-total-usdt').textContent = '0$';
+      } catch(e) { showToast(e.message, 'error'); }
+      finally { btn.disabled = false; btn.textContent = 'Продолжить'; }
+
+    } else if (tab === 'qr') {
+      const rub = parseFloat(document.getElementById('qr-rub').value);
+      if (!rub || rub <= 0) { showToast('Укажите сумму', 'error'); return; }
+      if (!qrFileBase64) { showToast('Прикрепите QR-код', 'error'); return; }
+      const usdt = rub / SIM_RATE;
+
+      const btn = document.getElementById('qr-submit-btn');
+      btn.disabled = true; btn.textContent = 'Отправка...';
+      try {
+        await api('POST', '/api/deposit/fiat', {
+          dep_type: 'QR',
+          rub_per_number: rub,
+          total_rub: rub,
+          usdt_amount: usdt,
+          qr_image: qrFileBase64,
+        });
+        closeModal('modal-qr');
+        showToast('QR отправлен! Ожидайте зачисления', 'success');
+        document.getElementById('qr-rub').value = '';
+        document.getElementById('qr-total-usdt').textContent = '0$';
+        qrFileBase64 = null;
+        document.getElementById('qr-preview-wrap').innerHTML = `<div style="font-size:26px;margin-bottom:8px">📷</div><div style="font-size:13px;font-weight:600;color:var(--gold)">Прикрепить QR</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Файл ещё не выбран</div>`;
+      } catch(e) { showToast(e.message, 'error'); }
+      finally { btn.disabled = false; btn.textContent = 'Продолжить'; }
     }
   }
 
