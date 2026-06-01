@@ -492,7 +492,7 @@
         </div>
         <div class="action-text">
           <div class="action-title">Пополнение SIM / СБП</div>
-          <div class="action-sub">Курс 60 ₽/USDT · Баланс телефона</div>
+          <div class="action-sub">Курс 65 ₽/USDT · Баланс телефона</div>
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
@@ -502,7 +502,7 @@
         </div>
         <div class="action-text">
           <div class="action-title">Оплата QR</div>
-          <div class="action-sub">Курс 60 ₽/USDT · Прикрепите QR-код</div>
+          <div class="action-sub">Курс 65 ₽/USDT · Прикрепите QR-код</div>
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
@@ -715,31 +715,29 @@
     <div class="modal-body">
       <div class="info-box" style="margin-bottom:14px">
         Пополнение баланса телефона.<br>
-        Курс: <strong>1 USDT = 60 ₽</strong>
+        Курс: <strong>1 USDT = 65 ₽</strong>
       </div>
       <div class="form-group">
         <label class="form-label">Сумма пополнения в рублях</label>
         <input class="form-input" type="number" id="sim-rub" placeholder="Например, 120" inputmode="decimal" oninput="updateSimCalc()" style="-moz-appearance:textfield">
-        <div style="font-size:12px;color:var(--text3);margin-top:6px" id="sim-hint">Для SIM сумма указывается в рублях на один номер.</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:6px">Сумма указывается в рублях на один номер.</div>
       </div>
-      <div class="form-group" id="sim-phones-group" style="display:none">
-        <label class="form-label">Номера для SIM</label>
+      <div class="form-group" id="sim-phones-group">
+        <label class="form-label">Номера телефонов</label>
         <textarea class="form-input" id="sim-phones" placeholder="+79990000001, +79990000002" rows="3" style="resize:none;font-size:13px" oninput="updateSimCalc()"></textarea>
         <div style="font-size:12px;color:var(--text3);margin-top:6px">Можно указать несколько номеров через запятую.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ссылка на чек (Crypto Bot / xRocket)</label>
+        <input class="form-input" type="url" id="sim-check-url" placeholder="https://t.me/CryptoBot?start=..." inputmode="url">
       </div>
       <div style="background:var(--bg3);border:0.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:14px">
         <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Итого к оплате</div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--text)" id="sim-total-usdt">0$</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:4px">По курсу 1$ — 60₽</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
-          <div style="background:var(--bg4);border-radius:8px;padding:10px">
-            <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Способ</div>
-            <div style="font-size:14px;font-weight:700" id="sim-summary-method">СБП</div>
-          </div>
-          <div style="background:var(--bg4);border-radius:8px;padding:10px">
-            <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Номеров</div>
-            <div style="font-size:14px;font-weight:700" id="sim-summary-count">—</div>
-          </div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px">По курсу 1$ — 65₽</div>
+        <div style="background:var(--bg4);border-radius:8px;padding:10px;margin-top:12px">
+          <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Номеров</div>
+          <div style="font-size:14px;font-weight:700" id="sim-summary-count">0</div>
         </div>
       </div>
       <button class="modal-submit" id="sim-submit-btn" onclick="submitDeposit('sim')">Продолжить</button>
@@ -756,7 +754,7 @@
     <div class="modal-body">
       <div class="info-box" style="margin-bottom:14px">
         Оплата через <strong>QR-код</strong>.<br>
-        Курс: <strong>1 USDT = 60 ₽</strong>
+        Курс: <strong>1 USDT = 65 ₽</strong>
       </div>
       <div class="form-group">
         <label class="form-label">Сумма пополнения в рублях</label>
@@ -774,10 +772,14 @@
           </div>
         </div>
       </div>
+      <div class="form-group">
+        <label class="form-label">Ссылка на чек (Crypto Bot / xRocket)</label>
+        <input class="form-input" type="url" id="qr-check-url" placeholder="https://t.me/CryptoBot?start=..." inputmode="url">
+      </div>
       <div style="background:var(--bg3);border:0.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:14px">
         <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Итого к оплате</div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--text)" id="qr-total-usdt">0$</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:4px">По курсу 1$ — 60₽</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px">По курсу 1$ — 65₽</div>
       </div>
       <button class="modal-submit" id="qr-submit-btn" onclick="submitDeposit('qr')">Продолжить</button>
       <div class="modal-note">После проверки менеджер зачислит баланс</div>
@@ -1028,7 +1030,7 @@
   }
 
   // ── Deposit tabs ────────────────────────────────────────────────────────────
-  const SIM_RATE = 60; // 1 USDT = 60 RUB for SIM/QR
+  const SIM_RATE = 65; // 1 USDT = 65 RUB for SIM/QR
   let selectedOperator = 'tele2';
   let simMethod = 'sbp';
   let qrFileBase64 = null;
@@ -1062,11 +1064,11 @@
     const rub = parseFloat(document.getElementById('sim-rub').value) || 0;
     const phones = document.getElementById('sim-phones').value
       .split(',').map(p => p.trim()).filter(Boolean);
-    const count = simMethod === 'sim' ? (phones.length || 0) : 1;
-    const totalRub = rub * count;
+    const count = phones.length || 0;
+    const totalRub = rub * (count || 1);
     const usdt = totalRub / SIM_RATE;
     document.getElementById('sim-total-usdt').textContent = usdt > 0 ? usdt.toFixed(2) + '$' : '0$';
-    document.getElementById('sim-summary-count').textContent = simMethod === 'sim' ? count : '—';
+    document.getElementById('sim-summary-count').textContent = count || 0;
   }
 
   function updateQrCalc() {
@@ -1110,51 +1112,70 @@
     } else if (tab === 'sim') {
       const rub = parseFloat(document.getElementById('sim-rub').value);
       const phones = document.getElementById('sim-phones').value.trim();
+      const checkUrl = document.getElementById('sim-check-url').value.trim();
       if (!rub || rub <= 0) { showToast('Укажите сумму пополнения', 'error'); return; }
-      if (simMethod === 'sim' && !phones) { showToast('Укажите номера телефонов', 'error'); return; }
+      if (!phones) { showToast('Укажите номера телефонов', 'error'); return; }
+      if (!checkUrl) { showToast('Вставьте ссылку на чек', 'error'); return; }
 
-      const phoneList = simMethod === 'sim' ? phones.split(',').map(p=>p.trim()).filter(Boolean) : [];
-      const totalRub = rub * (simMethod === 'sim' ? phoneList.length || 1 : 1);
+      const phoneList = phones.split(',').map(p => p.trim()).filter(Boolean);
+      const totalRub = rub * (phoneList.length || 1);
       const usdt = totalRub / SIM_RATE;
 
       const btn = document.getElementById('sim-submit-btn');
       btn.disabled = true; btn.textContent = 'Отправка...';
       try {
         await api('POST', '/api/deposit/fiat', {
-          dep_type: simMethod === 'sbp' ? 'СБП' : 'SIM',
-          operator: simMethod === 'sim' ? selectedOperator : null,
+          dep_type: 'SIM',
           rub_per_number: rub,
           phones: phoneList,
           total_rub: totalRub,
           usdt_amount: usdt,
+          check_url: checkUrl,
         });
         closeModal('modal-sim');
         showToast('Заявка отправлена! Ожидайте зачисления', 'success');
         document.getElementById('sim-rub').value = '';
         document.getElementById('sim-phones').value = '';
+        document.getElementById('sim-check-url').value = '';
         document.getElementById('sim-total-usdt').textContent = '0$';
+        document.getElementById('sim-summary-count').textContent = '0';
       } catch(e) { showToast(e.message, 'error'); }
       finally { btn.disabled = false; btn.textContent = 'Продолжить'; }
 
     } else if (tab === 'qr') {
       const rub = parseFloat(document.getElementById('qr-rub').value);
+      const checkUrl = document.getElementById('qr-check-url').value.trim();
       if (!rub || rub <= 0) { showToast('Укажите сумму', 'error'); return; }
       if (!qrFileBase64) { showToast('Прикрепите QR-код', 'error'); return; }
+      if (!checkUrl) { showToast('Вставьте ссылку на чек', 'error'); return; }
       const usdt = rub / SIM_RATE;
 
       const btn = document.getElementById('qr-submit-btn');
       btn.disabled = true; btn.textContent = 'Отправка...';
       try {
-        await api('POST', '/api/deposit/fiat', {
-          dep_type: 'QR',
-          rub_per_number: rub,
-          total_rub: rub,
-          usdt_amount: usdt,
-          qr_image: qrFileBase64,
+        // Send as multipart to avoid JSON size limit with base64 image
+        const formData = new FormData();
+        formData.append('dep_type', 'QR');
+        formData.append('total_rub', rub);
+        formData.append('usdt_amount', usdt);
+        formData.append('check_url', checkUrl);
+        // Convert base64 to blob
+        const res = await fetch(qrFileBase64);
+        const blob = await res.blob();
+        formData.append('qr_image_file', blob, 'qr.jpg');
+
+        const response = await fetch('/api/deposit/fiat-qr', {
+          method: 'POST',
+          headers: { 'X-Telegram-Init-Data': initData },
+          body: formData,
         });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Ошибка сервера');
+
         closeModal('modal-qr');
         showToast('QR отправлен! Ожидайте зачисления', 'success');
         document.getElementById('qr-rub').value = '';
+        document.getElementById('qr-check-url').value = '';
         document.getElementById('qr-total-usdt').textContent = '0$';
         qrFileBase64 = null;
         document.getElementById('qr-preview-wrap').innerHTML = `<div style="font-size:26px;margin-bottom:8px">📷</div><div style="font-size:13px;font-weight:600;color:var(--gold)">Прикрепить QR</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Файл ещё не выбран</div>`;
