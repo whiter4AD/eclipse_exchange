@@ -346,6 +346,30 @@
   }
   .op-btn.active { background:var(--gold-dim2); border-color:rgba(212,168,67,0.4); color:var(--gold); }
 
+  /* ── Reviews ── */
+  .review-pill {
+    display:inline-flex;align-items:center;gap:6px;padding:7px 14px;
+    border-radius:20px;font-size:13px;font-weight:600;border:0.5px solid;
+  }
+  .review-pill.count { background:var(--gold-dim2);border-color:rgba(212,168,67,0.4);color:var(--gold); }
+  .review-pill.stars { background:var(--bg2);border-color:var(--border2);color:var(--text); }
+  .review-card {
+    background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;padding:16px;
+  }
+  .review-top { display:flex;align-items:center;gap:12px;margin-bottom:10px; }
+  .review-avatar {
+    width:40px;height:40px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;font-weight:700;overflow:hidden;
+  }
+  .review-name { font-size:14px;font-weight:600; }
+  .review-stars { color:var(--gold);font-size:14px;margin-top:2px;letter-spacing:1px; }
+  .review-amount { font-size:12px;color:var(--text3);margin-top:6px; }
+  .review-text { font-size:13px;color:var(--text2);line-height:1.5;margin-top:6px; }
+  .stars-input { display:flex;gap:6px;margin:8px 0; }
+  .star-btn { font-size:28px;cursor:pointer;transition:transform 0.1s;background:none;border:none;padding:2px; }
+  .star-btn:active { transform:scale(0.9); }
+
   /* Skeleton */
   .skeleton {
     background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%);
@@ -491,8 +515,8 @@
           <svg viewBox="0 0 20 20" fill="none" stroke="#9A9590" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="10" height="16" rx="2"/><path d="M8 15h4"/></svg>
         </div>
         <div class="action-text">
-          <div class="action-title">Пополнение SIM / СБП</div>
-          <div class="action-sub">Курс 65 ₽/USDT · Баланс телефона</div>
+          <div class="action-title">Пополнение SIM</div>
+          <div class="action-sub">Курс 60 ₽/USDT · Баланс телефона</div>
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
@@ -502,11 +526,19 @@
         </div>
         <div class="action-text">
           <div class="action-title">Оплата QR</div>
-          <div class="action-sub">Курс 65 ₽/USDT · Прикрепите QR-код</div>
+          <div class="action-sub">Курс 60 ₽/USDT · Прикрепите QR-код</div>
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
     </div>
+    <!-- Reviews -->
+    <div class="section-header">Отзывы</div>
+    <div style="padding:0 20px 10px;display:flex;gap:8px" id="reviews-meta">
+      <div class="skeleton" style="width:110px;height:32px;border-radius:20px"></div>
+      <div class="skeleton" style="width:64px;height:32px;border-radius:20px"></div>
+    </div>
+    <div id="reviews-list" style="padding:0 20px;display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
+
   </div>
 
   <!-- ── DEALS PAGE ── -->
@@ -711,11 +743,11 @@
 <div class="modal-overlay" id="modal-sim" onclick="closeModalOutside(event,'modal-sim')">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title">Пополнение SIM / СБП</div>
+    <div class="modal-title">Пополнение SIM</div>
     <div class="modal-body">
       <div class="info-box" style="margin-bottom:14px">
         Пополнение баланса телефона.<br>
-        Курс: <strong>1 USDT = 65 ₽</strong>
+        Курс: <strong>1 USDT = 60 ₽</strong>
       </div>
       <div class="form-group">
         <label class="form-label">Сумма пополнения в рублях</label>
@@ -734,14 +766,14 @@
       <div style="background:var(--bg3);border:0.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:14px">
         <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Итого к оплате</div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--text)" id="sim-total-usdt">0$</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:4px">По курсу 1$ — 65₽</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px">По курсу 1$ — 60₽</div>
         <div style="background:var(--bg4);border-radius:8px;padding:10px;margin-top:12px">
           <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Номеров</div>
           <div style="font-size:14px;font-weight:700" id="sim-summary-count">0</div>
         </div>
       </div>
       <button class="modal-submit" id="sim-submit-btn" onclick="submitDeposit('sim')">Продолжить</button>
-      <div class="modal-note">После проверки менеджер зачислит баланс</div>
+      <div class="modal-note">Оплата в течение 1-5 минут</div>
     </div>
   </div>
 </div>
@@ -754,7 +786,7 @@
     <div class="modal-body">
       <div class="info-box" style="margin-bottom:14px">
         Оплата через <strong>QR-код</strong>.<br>
-        Курс: <strong>1 USDT = 65 ₽</strong>
+        Курс: <strong>1 USDT = 60 ₽</strong>
       </div>
       <div class="form-group">
         <label class="form-label">Сумма пополнения в рублях</label>
@@ -779,10 +811,39 @@
       <div style="background:var(--bg3);border:0.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:14px">
         <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Итого к оплате</div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--text)" id="qr-total-usdt">0$</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:4px">По курсу 1$ — 65₽</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px">По курсу 1$ — 60₽</div>
       </div>
       <button class="modal-submit" id="qr-submit-btn" onclick="submitDeposit('qr')">Продолжить</button>
-      <div class="modal-note">После проверки менеджер зачислит баланс</div>
+      <div class="modal-note">Оплата в течение 1-5 минут</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── REVIEW MODAL ── -->
+<div class="modal-overlay" id="modal-review" onclick="closeModalOutside(event,'modal-review')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Оставить отзыв</div>
+    <div class="modal-body">
+      <div class="info-box" style="margin-bottom:16px" id="review-order-info">
+        Расскажите о вашем опыте обмена
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ваша оценка</label>
+        <div class="stars-input" id="stars-input">
+          <button class="star-btn" onclick="setRating(1)">⭐</button>
+          <button class="star-btn" onclick="setRating(2)">⭐</button>
+          <button class="star-btn" onclick="setRating(3)">⭐</button>
+          <button class="star-btn" onclick="setRating(4)">⭐</button>
+          <button class="star-btn" onclick="setRating(5)">⭐</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Комментарий (необязательно)</label>
+        <textarea class="form-input" id="review-text" placeholder="Всё прошло быстро и без проблем..." rows="3" style="resize:none"></textarea>
+      </div>
+      <button class="modal-submit" id="review-submit-btn" onclick="submitReview()">Отправить отзыв</button>
+      <div class="modal-note">Отзыв можно оставить только после завершённой сделки</div>
     </div>
   </div>
 </div>
@@ -1015,6 +1076,7 @@
       document.getElementById('ex-rub').textContent = '—';
       document.getElementById('usdt-input').value = '';
       document.getElementById('rub-result').textContent = '—';
+      loadReviews();
     } catch (e) {
       if (e.message.includes('Недостаточно') || e.message.includes('баланс')) {
         closeModal('modal-exchange');
@@ -1030,7 +1092,7 @@
   }
 
   // ── Deposit tabs ────────────────────────────────────────────────────────────
-  const SIM_RATE = 65; // 1 USDT = 65 RUB for SIM/QR
+  const SIM_RATE = 60; // 1 USDT = 65 RUB for SIM/QR
   let selectedOperator = 'tele2';
   let simMethod = 'sbp';
   let qrFileBase64 = null;
@@ -1262,8 +1324,101 @@
       hour: '2-digit', minute: '2-digit' }) + ' МСК';
   }
 
+  // ── Reviews ─────────────────────────────────────────────────────────────────
+  let selectedRating = 5;
+  let reviewOrderId = null;
+
+  function setRating(n) {
+    selectedRating = n;
+    document.querySelectorAll('.star-btn').forEach((btn, i) => {
+      btn.textContent = i < n ? '★' : '☆';
+      btn.style.color = i < n ? 'var(--gold)' : 'var(--text3)';
+    });
+  }
+
+  async function loadReviews() {
+    try {
+      const data = await fetch('/api/reviews').then(r => r.json());
+      const metaEl = document.getElementById('reviews-meta');
+      const listEl = document.getElementById('reviews-list');
+
+      // Meta pills
+      metaEl.innerHTML = `
+        <div class="review-pill count">🗨 ${data.total} отзывов</div>
+        <div class="review-pill stars">${'★'.repeat(Math.round(data.avg))} ${data.avg}</div>
+      `;
+
+      if (!data.reviews.length) {
+        listEl.innerHTML = `<div style="font-size:13px;color:var(--text3);padding:8px 0">Пока нет отзывов. Будьте первым!</div>`;
+        return;
+      }
+
+      listEl.innerHTML = data.reviews.map(r => {
+        const name = r.username ? `@${r.username}` : (r.first_name || 'Пользователь');
+        const initials = (r.first_name || r.username || '?')[0].toUpperCase();
+        const colors = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#DDA0DD','#F0A500'];
+        const color = colors[r.tg_id ? Number(String(r.tg_id).slice(-1)) % colors.length : 0];
+        const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+        const amount = r.type === 'exchange'
+          ? `${Number(r.usdt).toFixed(2)} USDT → ${Math.round(Number(r.rub)).toLocaleString('ru-RU')} ₽`
+          : `${Number(r.usdt).toFixed(2)} USDT`;
+        return `<div class="review-card">
+          <div class="review-top">
+            <div class="review-avatar" style="background:${color}">${initials}</div>
+            <div>
+              <div class="review-name">${name}</div>
+              <div class="review-stars">${stars}</div>
+            </div>
+          </div>
+          ${r.text ? `<div class="review-text">${r.text}</div>` : ''}
+          <div class="review-amount">Сумма: ${amount}</div>
+        </div>`;
+      }).join('');
+    } catch(e) { console.warn('Reviews load error:', e.message); }
+  }
+
+  async function checkAndPromptReview() {
+    if (!initData) return;
+    try {
+      const data = await api('GET', '/api/reviews/eligible');
+      if (!data.eligible || !data.order) return;
+      reviewOrderId = data.order.id;
+
+      const typeMap = { exchange: 'обмена', deposit: 'пополнения', withdrawal: 'вывода' };
+      const orderType = typeMap[data.order.type] || 'сделки';
+      const amount = data.order.type === 'exchange'
+        ? `${Number(data.order.usdt).toFixed(2)} USDT`
+        : `${Number(data.order.usdt).toFixed(2)} USDT`;
+
+      document.getElementById('review-order-info').innerHTML =
+        `Сделка #${data.order.id} завершена 🎉<br>Оцените качество ${orderType} на <strong>${amount}</strong>`;
+
+      // Init stars
+      setRating(5);
+
+      // Show after short delay
+      setTimeout(() => openModal('modal-review'), 800);
+    } catch(e) {}
+  }
+
+  async function submitReview() {
+    if (!reviewOrderId) return;
+    const text = document.getElementById('review-text').value.trim();
+    const btn = document.getElementById('review-submit-btn');
+    btn.disabled = true; btn.textContent = 'Отправка...';
+    try {
+      await api('POST', '/api/reviews', { order_id: reviewOrderId, rating: selectedRating, text });
+      closeModal('modal-review');
+      showToast('Спасибо за отзыв! 🙏', 'success');
+      loadReviews();
+    } catch(e) { showToast(e.message, 'error'); }
+    finally { btn.disabled = false; btn.textContent = 'Отправить отзыв'; }
+  }
+
   // ── Init ────────────────────────────────────────────────────────────────────
   loadUser();
+  loadReviews();
+  setTimeout(checkAndPromptReview, 2000);
 </script>
 
 </body>
