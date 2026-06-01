@@ -43,16 +43,9 @@ async function initDB() {
       blocked     INTEGER DEFAULT 0,
       created_at  TIMESTAMPTZ DEFAULT NOW()
     );
-    CREATE TABLE IF NOT EXISTS reviews (
-      id          SERIAL PRIMARY KEY,
-      tg_id       BIGINT,
-      order_id    INTEGER,
-      rating      INTEGER DEFAULT 5,
-      text        TEXT,
-      created_at  TIMESTAMPTZ DEFAULT NOW(),
-      FOREIGN KEY (tg_id) REFERENCES users(tg_id),
-      UNIQUE (order_id)
-    );
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS orders (
       id          SERIAL PRIMARY KEY,
       tg_id       BIGINT,
       type        TEXT,
@@ -63,6 +56,18 @@ async function initDB() {
       status      TEXT DEFAULT 'pending',
       created_at  TIMESTAMPTZ DEFAULT NOW(),
       FOREIGN KEY (tg_id) REFERENCES users(tg_id)
+    );
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS reviews (
+      id          SERIAL PRIMARY KEY,
+      tg_id       BIGINT,
+      order_id    INTEGER,
+      rating      INTEGER DEFAULT 5,
+      text        TEXT,
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      FOREIGN KEY (tg_id) REFERENCES users(tg_id),
+      UNIQUE (order_id)
     );
   `);
   console.log('✅ Database ready');
