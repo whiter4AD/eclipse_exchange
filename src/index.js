@@ -43,7 +43,16 @@ async function initDB() {
       blocked     INTEGER DEFAULT 0,
       created_at  TIMESTAMPTZ DEFAULT NOW()
     );
-    CREATE TABLE IF NOT EXISTS orders (
+    CREATE TABLE IF NOT EXISTS reviews (
+      id          SERIAL PRIMARY KEY,
+      tg_id       BIGINT,
+      order_id    INTEGER,
+      rating      INTEGER DEFAULT 5,
+      text        TEXT,
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      FOREIGN KEY (tg_id) REFERENCES users(tg_id),
+      UNIQUE (order_id)
+    );
       id          SERIAL PRIMARY KEY,
       tg_id       BIGINT,
       type        TEXT,
@@ -217,7 +226,9 @@ bot.on('callback_query', async (query_cb) => {
 
     if (action === 'done') {
       await query("UPDATE orders SET status='done' WHERE id=$1", [order.id]);
-      if (order.type === 'deposit') {
+      // Only credit balance for crypto check deposits
+      if (order.type === 'deposit' && order.check_url &&
+          !['SIM','QR','СБП'].includes(order.requisites)) {
         await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [order.usdt, order.tg_id]);
       }
       try {
@@ -225,7 +236,8 @@ bot.on('callback_query', async (query_cb) => {
           `✅ Заявка #${order.id} выполнена!\n\n` +
           (order.type === 'exchange' ? `💴 ${Math.round(Number(order.rub)).toLocaleString('ru-RU')} ₽ отправлены на ваши реквизиты.`
           : order.type === 'withdrawal' ? `💵 Чек на ${Number(order.usdt)} USDT отправлен вам в Telegram.`
-          : `💵 ${Number(order.usdt)} USDT зачислены на ваш баланс.`)
+          : isCryptoDeposit ? `💵 ${Number(order.usdt)} USDT зачислены на ваш баланс.`
+          : `✅ Ваша заявка выполнена!`)
         );
       } catch(e) {}
       await bot.answerCallbackQuery(query_cb.id, { text: '✅ Выполнено' });
@@ -413,6 +425,69 @@ app.post('/api/withdrawal', authMiddleware, async (req, res) => {
     [user.tg_id, usdt]);
   notifyManager(r.rows[0], user);
   res.json({ success:true, order:r.rows[0], balance:balance-usdt });
+});
+
+// GET /api/reviews — public, last reviews + count
+app.get('/api/reviews', async (req, res) => {
+  const reviews = await query(`
+    SELECT r.id, r.rating, r.text, r.created_at, r.order_id,
+           u.first_name, u.username,
+           o.usdt, o.rub, o.type
+    FROM reviews r
+    JOIN users u ON r.tg_id = u.tg_id
+    JOIN orders o ON r.order_id = o.id
+    ORDER BY r.created_at DESC LIMIT 3
+  `);
+  const total = await query('SELECT COUNT(*) as c FROM reviews');
+  const avg = await query('SELECT COALESCE(AVG(rating),5) as a FROM reviews');
+  res.json({
+    reviews: reviews.rows,
+    total: Number(total.rows[0].c),
+    avg: Number(Number(avg.rows[0].a).toFixed(1)),
+  });
+});
+
+// GET /api/reviews/eligible — check if user can leave a review
+app.get('/api/reviews/eligible', authMiddleware, async (req, res) => {
+  const user = await upsertUser(req.tgUser);
+  // Find completed exchange orders without a review
+  const eligible = await query(`
+    SELECT o.id, o.usdt, o.rub, o.type, o.created_at
+    FROM orders o
+    LEFT JOIN reviews r ON r.order_id = o.id
+    WHERE o.tg_id = $1
+      AND o.status = 'done'
+      AND o.type IN ('exchange', 'deposit', 'withdrawal')
+      AND r.id IS NULL
+    ORDER BY o.created_at DESC LIMIT 1
+  `, [user.tg_id]);
+  res.json({ eligible: eligible.rows.length > 0, order: eligible.rows[0] || null });
+});
+
+// POST /api/reviews — submit a review
+app.post('/api/reviews', authMiddleware, async (req, res) => {
+  const user = await upsertUser(req.tgUser);
+  const { order_id, rating, text } = req.body;
+
+  if (!order_id) return res.status(400).json({ error: 'order_id обязателен' });
+  if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: 'Оценка от 1 до 5' });
+
+  // Verify order belongs to user and is done
+  const order = await query(
+    "SELECT * FROM orders WHERE id=$1 AND tg_id=$2 AND status='done'",
+    [order_id, user.tg_id]
+  );
+  if (!order.rows[0]) return res.status(403).json({ error: 'Сделка не найдена или не завершена' });
+
+  // Check not already reviewed
+  const exists = await query('SELECT id FROM reviews WHERE order_id=$1', [order_id]);
+  if (exists.rows[0]) return res.status(400).json({ error: 'Отзыв уже оставлен' });
+
+  const r = await query(
+    'INSERT INTO reviews (tg_id, order_id, rating, text) VALUES ($1,$2,$3,$4) RETURNING *',
+    [user.tg_id, order_id, rating, (text || '').trim().slice(0, 300)]
+  );
+  res.json({ success: true, review: r.rows[0] });
 });
 
 // Admin
