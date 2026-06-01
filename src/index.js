@@ -4,6 +4,9 @@ const { Pool } = require('pg');
 const cors = require('cors');
 const crypto = require('crypto');
 const path = require('path');
+const multer = require('multer');
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -322,17 +325,19 @@ app.post('/api/deposit', authMiddleware, async (req, res) => {
   res.json({ success:true, order:r.rows[0] });
 });
 
-// POST /api/deposit/fiat — SIM / QR / СБП deposit
+
+// POST /api/deposit/fiat — SIM deposit
 app.post('/api/deposit/fiat', authMiddleware, async (req, res) => {
   const user = await upsertUser(req.tgUser);
-  const { dep_type, operator, rub_per_number, phones, total_rub, usdt_amount, qr_image } = req.body;
+  const { dep_type, rub_per_number, phones, total_rub, usdt_amount, check_url } = req.body;
 
   if (!dep_type) return res.status(400).json({ error: 'Тип пополнения обязателен' });
   if (!total_rub || total_rub <= 0) return res.status(400).json({ error: 'Укажите сумму' });
+  if (!check_url) return res.status(400).json({ error: 'Ссылка на чек обязательна' });
 
   const r = await query(
-    `INSERT INTO orders (tg_id, type, usdt, rub, requisites) VALUES ($1, 'deposit', $2, $3, $4) RETURNING *`,
-    [user.tg_id, usdt_amount, total_rub, dep_type]
+    `INSERT INTO orders (tg_id, type, usdt, rub, requisites, check_url) VALUES ($1, 'deposit', $2, $3, $4, $5) RETURNING *`,
+    [user.tg_id, usdt_amount, total_rub, dep_type, check_url]
   );
   const order = r.rows[0];
 
@@ -344,29 +349,55 @@ app.post('/api/deposit/fiat', authMiddleware, async (req, res) => {
     text += `🆔 Заявка: #${order.id}\n`;
     text += `💵 К зачислению: ${Number(usdt_amount).toFixed(2)} USDT\n`;
     text += `💴 Сумма: ${total_rub} ₽\n`;
-    if (dep_type === 'SIM') {
-      text += `📱 Оператор: ${operator || '—'}\n`;
-      text += `☎️ Номера: ${(phones || []).join(', ')}\n`;
-      text += `💰 На номер: ${rub_per_number} ₽\n`;
-    }
+    text += `☎️ Номера: ${(phones || []).join(', ')}\n`;
+    text += `💰 На номер: ${rub_per_number} ₽\n`;
+    text += `🔗 Чек: ${check_url}\n`;
     text += `⏰ ${formatMsk(order.created_at)}`;
-
-    const keyboard = { reply_markup: { inline_keyboard: [[
-      { text: '✅ Выполнено', callback_data: `done_${order.id}` },
-      { text: '❌ Отклонить', callback_data: `cancel_${order.id}` },
-    ]]}};
-
     try {
-      if (dep_type === 'QR' && qr_image) {
-        const base64Data = qr_image.replace(/^data:image\/\w+;base64,/, '');
-        const imgBuffer = Buffer.from(base64Data, 'base64');
-        await bot.sendPhoto(managerChatId, imgBuffer, { caption: text, ...keyboard });
-      } else {
-        await bot.sendMessage(managerChatId, text, keyboard);
-      }
-    } catch(e) { console.error('Fiat notify error:', e.message); }
+      await bot.sendMessage(managerChatId, text, { reply_markup: { inline_keyboard: [[
+        { text: '✅ Выполнено', callback_data: `done_${order.id}` },
+        { text: '❌ Отклонить', callback_data: `cancel_${order.id}` },
+      ]]}});
+    } catch(e) { console.error('SIM notify error:', e.message); }
   }
+  res.json({ success: true, order });
+});
 
+// POST /api/deposit/fiat-qr — QR deposit with image upload
+app.post('/api/deposit/fiat-qr', authMiddleware, upload.single('qr_image_file'), async (req, res) => {
+  const user = await upsertUser(req.tgUser);
+  const { dep_type, total_rub, usdt_amount, check_url } = req.body;
+
+  if (!total_rub || total_rub <= 0) return res.status(400).json({ error: 'Укажите сумму' });
+  if (!check_url) return res.status(400).json({ error: 'Ссылка на чек обязательна' });
+  if (!req.file) return res.status(400).json({ error: 'QR-изображение обязательно' });
+
+  const r = await query(
+    `INSERT INTO orders (tg_id, type, usdt, rub, requisites, check_url) VALUES ($1, 'deposit', $2, $3, 'QR', $4) RETURNING *`,
+    [user.tg_id, usdt_amount, total_rub, check_url]
+  );
+  const order = r.rows[0];
+
+  const managerChatId = process.env.MANAGER_CHAT_ID;
+  if (managerChatId) {
+    const userTag = user.username ? `@${user.username}` : `#${user.tg_id}`;
+    let text = `📥 Пополнение (QR)\n\n`;
+    text += `👤 ${userTag} (${user.first_name || ''})\n`;
+    text += `🆔 Заявка: #${order.id}\n`;
+    text += `💵 К зачислению: ${Number(usdt_amount).toFixed(2)} USDT\n`;
+    text += `💴 Сумма: ${total_rub} ₽\n`;
+    text += `🔗 Чек: ${check_url}\n`;
+    text += `⏰ ${formatMsk(order.created_at)}`;
+    try {
+      await bot.sendPhoto(managerChatId, req.file.buffer, {
+        caption: text,
+        reply_markup: { inline_keyboard: [[
+          { text: '✅ Выполнено', callback_data: `done_${order.id}` },
+          { text: '❌ Отклонить', callback_data: `cancel_${order.id}` },
+        ]]}
+      });
+    } catch(e) { console.error('QR notify error:', e.message); }
+  }
   res.json({ success: true, order });
 });
 
