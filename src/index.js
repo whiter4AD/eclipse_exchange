@@ -432,6 +432,25 @@ app.post('/api/withdrawal', authMiddleware, async (req, res) => {
   res.json({ success:true, order:r.rows[0], balance:balance-usdt });
 });
 
+// GET /api/avatar/:tg_id — proxy Telegram profile photo
+app.get('/api/avatar/:tg_id', async (req, res) => {
+  try {
+    const photos = await bot.getUserProfilePhotos(req.params.tg_id, { limit: 1 });
+    if (!photos.total_count) return res.status(404).end();
+    const fileId = photos.photos[0][0].file_id;
+    const file = await bot.getFile(fileId);
+    const url = `https://api.telegram.org/file/bot${BOT_TOKEN}/${file.file_path}`;
+    const fetch = require('https');
+    fetch.get(url, (stream) => {
+      res.setHeader('Content-Type', 'image/jpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      stream.pipe(res);
+    }).on('error', () => res.status(404).end());
+  } catch(e) {
+    res.status(404).end();
+  }
+});
+
 // GET /api/reviews — public, last reviews + count
 app.get('/api/reviews', async (req, res) => {
   const reviews = await query(`
