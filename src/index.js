@@ -520,6 +520,27 @@ app.post('/api/reviews', authMiddleware, async (req, res) => {
   res.json({ success: true, review: r.rows[0] });
 });
 
+// GET /api/admin/reviews — all reviews for admin
+app.get('/api/admin/reviews', adminMiddleware, async (req, res) => {
+  const result = await query(`
+    SELECT r.id, r.rating, r.text, r.created_at, r.order_id, r.avatar_url, r.tg_id,
+           u.first_name, u.last_name, u.username,
+           o.usdt, o.rub, o.type
+    FROM reviews r
+    JOIN users u ON r.tg_id = u.tg_id
+    JOIN orders o ON r.order_id = o.id
+    ORDER BY r.created_at DESC
+  `);
+  const total = await query('SELECT COUNT(*) as c FROM reviews');
+  res.json({ reviews: result.rows, total: Number(total.rows[0].c) });
+});
+
+// DELETE /api/admin/reviews/:id
+app.delete('/api/admin/reviews/:id', adminMiddleware, async (req, res) => {
+  await query('DELETE FROM reviews WHERE id=$1', [Number(req.params.id)]);
+  res.json({ success: true });
+});
+
 // Admin
 app.get('/api/admin/stats', adminMiddleware, async (req, res) => {
   const [tu, au, mo, tr, tu2, pe, nt] = await Promise.all([
@@ -554,7 +575,7 @@ app.get('/api/admin/users', adminMiddleware, async (req, res) => {
 
   const result = await query(`
     SELECT u.tg_id, u.username, u.first_name, u.last_name,
-           u.balance, u.agreed, u.blocked, u.created_at,
+           u.balance, u.agreed, u.blocked, u.created_at, u.avatar_url,
            COUNT(o.id) as order_count,
            COALESCE(SUM(CASE WHEN o.type='exchange' AND o.status='done' THEN o.usdt ELSE 0 END),0) as volume_usdt
     FROM users u LEFT JOIN orders o ON u.tg_id=o.tg_id
