@@ -65,12 +65,29 @@ async function initDB() {
       order_id    INTEGER,
       rating      INTEGER DEFAULT 5,
       text        TEXT,
+      avatar_url  TEXT,
       created_at  TIMESTAMPTZ DEFAULT NOW(),
       FOREIGN KEY (tg_id) REFERENCES users(tg_id),
       UNIQUE (order_id)
     );
   `);
+  // migrations
+  try { await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`); } catch(e) {}
+  try { await query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS avatar_url TEXT`); } catch(e) {}
   console.log('✅ Database ready');
+}
+
+// Fetch and save Telegram avatar URL
+async function getTelegramAvatarUrl(tgId) {
+  try {
+    const photos = await bot.getUserProfilePhotos(tgId, { limit: 1 });
+    if (!photos.total_count) return null;
+    const fileId = photos.photos[0][0].file_id;
+    const file = await bot.getFile(fileId);
+    return `https://api.telegram.org/file/bot${BOT_TOKEN}/${file.file_path}`;
+  } catch(e) {
+    return null;
+  }
 }
 
 // ── MSK time ──────────────────────────────────────────────────────────────────
@@ -128,6 +145,11 @@ const webAppUrl = () => process.env.WEBAPP_URL || 'https://your-app.railway.app'
 bot.onText(/\/start/, async (msg) => {
   const user = await upsertUser({ id: msg.from.id, username: msg.from.username,
     first_name: msg.from.first_name, last_name: msg.from.last_name });
+
+  // Fetch and save avatar in background
+  getTelegramAvatarUrl(msg.from.id).then(url => {
+    if (url) query('UPDATE users SET avatar_url=$1 WHERE tg_id=$2', [url, msg.from.id]).catch(()=>{});
+  });
 
   if (user.blocked) return bot.sendMessage(msg.chat.id, '🚫 Ваш аккаунт заблокирован.');
 
@@ -299,6 +321,7 @@ app.get('/api/me', authMiddleware, async (req, res) => {
   const s = stats.rows[0];
   res.json({ id:user.tg_id, username:user.username, first_name:user.first_name,
     last_name:user.last_name, balance:Number(user.balance), agreed:user.agreed,
+    avatar_url:user.avatar_url || null,
     created_at:user.created_at, stats:{
       total_orders:Number(s.total_orders)||0,
       done_orders:Number(s.done_orders)||0,
@@ -432,30 +455,11 @@ app.post('/api/withdrawal', authMiddleware, async (req, res) => {
   res.json({ success:true, order:r.rows[0], balance:balance-usdt });
 });
 
-// GET /api/avatar/:tg_id — proxy Telegram profile photo
-app.get('/api/avatar/:tg_id', async (req, res) => {
-  try {
-    const photos = await bot.getUserProfilePhotos(req.params.tg_id, { limit: 1 });
-    if (!photos.total_count) return res.status(404).end();
-    const fileId = photos.photos[0][0].file_id;
-    const file = await bot.getFile(fileId);
-    const url = `https://api.telegram.org/file/bot${BOT_TOKEN}/${file.file_path}`;
-    const fetch = require('https');
-    fetch.get(url, (stream) => {
-      res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
-      stream.pipe(res);
-    }).on('error', () => res.status(404).end());
-  } catch(e) {
-    res.status(404).end();
-  }
-});
-
 // GET /api/reviews — public, last reviews + count
 app.get('/api/reviews', async (req, res) => {
   const reviews = await query(`
-    SELECT r.id, r.rating, r.text, r.created_at, r.order_id,
-           u.first_name, u.username,
+    SELECT r.id, r.rating, r.text, r.created_at, r.order_id, r.avatar_url,
+           u.first_name, u.last_name, u.username,
            o.usdt, o.rub, o.type
     FROM reviews r
     JOIN users u ON r.tg_id = u.tg_id
@@ -507,9 +511,11 @@ app.post('/api/reviews', authMiddleware, async (req, res) => {
   const exists = await query('SELECT id FROM reviews WHERE order_id=$1', [order_id]);
   if (exists.rows[0]) return res.status(400).json({ error: 'Отзыв уже оставлен' });
 
+  const avatarUrl = user.avatar_url || await getTelegramAvatarUrl(user.tg_id);
+
   const r = await query(
-    'INSERT INTO reviews (tg_id, order_id, rating, text) VALUES ($1,$2,$3,$4) RETURNING *',
-    [user.tg_id, order_id, rating, (text || '').trim().slice(0, 300)]
+    'INSERT INTO reviews (tg_id, order_id, rating, text, avatar_url) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+    [user.tg_id, order_id, rating, (text || '').trim().slice(0, 300), avatarUrl]
   );
   res.json({ success: true, review: r.rows[0] });
 });
