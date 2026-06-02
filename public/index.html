@@ -889,21 +889,28 @@
   // ── Load user data ──────────────────────────────────────────────────────────
   async function loadUser() {
     // Fill profile from Telegram data immediately (no server round trip needed for display)
+    // Profile stats
     if (tgUser) {
       const avatar = document.getElementById('profile-avatar');
       const nameEl = document.getElementById('profile-name');
       const usernameEl = document.getElementById('profile-username');
-
-      const initials = ((tgUser.first_name || '')[0] || '') + ((tgUser.last_name || '')[0] || '');
-      avatar.textContent = initials.toUpperCase() || '?';
-
       const fullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ');
       nameEl.textContent = fullName || 'Пользователь';
       usernameEl.textContent = tgUser.username ? `@${tgUser.username}` : `ID: ${tgUser.id}`;
+      const initials = ((tgUser.first_name||'')[0]||'').toUpperCase();
+      avatar.textContent = initials || '?';
     }
 
     try {
       const me = await api('GET', '/api/me');
+
+      // Update avatar from server if available
+      if (me.avatar_url) {
+        const avatar = document.getElementById('profile-avatar');
+        avatar.innerHTML = `<img src="${me.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.innerHTML='${((tgUser||{}).first_name||'?')[0].toUpperCase()}'">`;
+        avatar.style.background = 'transparent';
+        avatar.style.border = 'none';
+      }
 
       // Profile stats
       document.getElementById('profile-date').textContent = formatDate(me.created_at);
@@ -1362,10 +1369,15 @@
         const amount = r.type === 'exchange'
           ? `${Number(r.usdt).toFixed(2)} USDT → ${Math.round(Number(r.rub)).toLocaleString('ru-RU')} ₽`
           : `${Number(r.usdt).toFixed(2)} USDT`;
-        const avatarId = `av-${r.id}`;
+
+        const avatarHtml = r.avatar_url
+          ? `<img src="${r.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.innerHTML='${initials}';this.parentElement.style.background='${color}'">`
+          : initials;
+        const avatarBg = r.avatar_url ? 'transparent' : color;
+
         return `<div class="review-card">
           <div class="review-top">
-            <div class="review-avatar" style="background:${color}" id="${avatarId}">${initials}</div>
+            <div class="review-avatar" style="background:${avatarBg}">${avatarHtml}</div>
             <div>
               <div class="review-name">${name}</div>
               <div class="review-stars">${stars}</div>
@@ -1375,23 +1387,6 @@
           <div class="review-amount">Сумма: ${amount}</div>
         </div>`;
       }).join('');
-
-      // Load avatars async after render
-      data.reviews.forEach(r => {
-        const el = document.getElementById(`av-${r.id}`);
-        if (!el) return;
-        const img = new Image();
-        img.onload = () => {
-          el.textContent = '';
-          el.style.background = 'none';
-          el.style.padding = '0';
-          const i = document.createElement('img');
-          i.src = img.src;
-          i.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
-          el.appendChild(i);
-        };
-        img.src = `/api/avatar/${r.tg_id}`;
-      });
     } catch(e) { console.warn('Reviews load error:', e.message); }
   }
 
