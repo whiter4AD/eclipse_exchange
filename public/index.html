@@ -346,6 +346,17 @@
   }
   .op-btn.active { background:var(--gold-dim2); border-color:rgba(212,168,67,0.4); color:var(--gold); }
 
+  /* ── Direction toggle ── */
+  .dir-btn {
+    flex:1; display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:10px; border-radius:10px; background:var(--bg2);
+    border:0.5px solid var(--border); font-size:12px; font-weight:600;
+    color:var(--text3); cursor:pointer; font-family:'Space Grotesk',sans-serif;
+    transition:all 0.15s;
+  }
+  .dir-btn.active.sell { background:var(--gold-dim2); border-color:rgba(212,168,67,0.4); color:var(--gold); }
+  .dir-btn.active.buy  { background:var(--green-dim); border-color:rgba(61,214,140,0.35); color:var(--green); }
+
   /* ── Reviews ── */
   .review-pill {
     display:inline-flex;align-items:center;gap:6px;padding:7px 14px;
@@ -403,15 +414,31 @@
   <!-- ── HOME PAGE ── -->
   <div class="page active" id="page-home">
     <div class="rate-hero">
-      <div class="rate-label">Текущий курс</div>
-      <div class="rate-main">
-        <div class="rate-value">79.00</div>
-        <div class="rate-unit">₽ / USDT</div>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1">
+          <div class="rate-label">Продажа USDT</div>
+          <div class="rate-main">
+            <div class="rate-value" style="font-size:30px">79.00</div>
+            <div class="rate-unit" style="font-size:13px">₽</div>
+          </div>
+          <div class="rate-sub" style="font-size:11px">USDT → ₽</div>
+        </div>
+        <div style="width:0.5px;background:var(--border2)"></div>
+        <div style="flex:1;padding-left:10px">
+          <div class="rate-label">Покупка USDT</div>
+          <div class="rate-main">
+            <div class="rate-value" style="font-size:30px;color:var(--green)">88.00</div>
+            <div class="rate-unit" style="font-size:13px">₽</div>
+          </div>
+          <div class="rate-sub" style="font-size:11px">₽ → USDT</div>
+        </div>
       </div>
-      <div class="rate-sub">Фиксированный · Обновлено сегодня</div>
-      <div class="rate-badge">
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1.5L6.5 4H8.5L7 5.8L7.8 8L5 6.5L2.2 8L3 5.8L1.5 4H3.5L5 1.5Z" fill="#D4A843"/></svg>
-        ФИКСИРОВАН
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <div class="rate-badge">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1.5L6.5 4H8.5L7 5.8L7.8 8L5 6.5L2.2 8L3 5.8L1.5 4H3.5L5 1.5Z" fill="#D4A843"/></svg>
+          ФИКСИРОВАН
+        </div>
+        <div class="rate-sub" style="margin-top:0;line-height:1.8">· Обновлено сегодня</div>
       </div>
     </div>
 
@@ -422,12 +449,25 @@
     </div>
 
     <div class="section-header">Калькулятор обмена</div>
+
+    <!-- Direction toggle -->
+    <div style="display:flex;gap:8px;padding:0 20px 12px">
+      <button class="dir-btn active" id="dir-sell" onclick="setDirection('sell')">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+        Продать USDT
+      </button>
+      <button class="dir-btn" id="dir-buy" onclick="setDirection('buy')">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 7H2M6 3L2 7l4 4"/></svg>
+        Купить USDT
+      </button>
+    </div>
+
     <div class="calc-card">
       <div class="calc-field">
         <div class="calc-field-label">Вы отдаёте</div>
         <div class="calc-input-row">
-          <input class="calc-input" type="number" id="usdt-input" placeholder="0.00" inputmode="decimal">
-          <div class="calc-currency">USDT</div>
+          <input class="calc-input" type="number" id="main-input" placeholder="0.00" inputmode="decimal" oninput="calcUpdate()">
+          <div class="calc-currency" id="input-currency">USDT</div>
         </div>
       </div>
       <div class="calc-arrow">
@@ -438,18 +478,18 @@
       <div class="calc-field">
         <div class="calc-field-label">Вы получаете</div>
         <div class="calc-input-row">
-          <div class="calc-result" id="rub-result">—</div>
-          <div class="calc-currency">₽ RUB</div>
+          <div class="calc-result" id="main-result">—</div>
+          <div class="calc-currency" id="output-currency">₽ RUB</div>
         </div>
       </div>
-      <div class="calc-warning" id="calc-warning">Минимальная сумма обмена — 5 000 ₽</div>
-      <div class="calc-min-hint">Мин. сумма: 5 000 ₽ · Курс: 79 ₽/USDT</div>
+      <div class="calc-warning" id="calc-warning"></div>
+      <div class="calc-min-hint" id="calc-hint">Мин. сумма: 4 000 ₽ · Курс: 79 ₽/USDT</div>
     </div>
 
     <div class="cta-wrap">
-      <button class="cta-btn" id="exchange-btn" onclick="openExchangeModal()">
+      <button class="cta-btn" id="exchange-btn" onclick="handleCalcAction()">
         <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h12M9 3l6 6-6 6"/></svg>
-        Обменять
+        <span id="cta-label">Продать USDT</span>
       </button>
     </div>
 
@@ -458,22 +498,29 @@
       <div class="step">
         <div class="step-num">01</div>
         <div class="step-content">
-          <div class="step-title">Введите сумму</div>
-          <div class="step-desc">Укажите количество USDT, которые хотите обменять на рубли</div>
+          <div class="step-title">Выберите направление</div>
+          <div class="step-desc">Продажа USDT → ₽ по курсу 79 ₽ или покупка USDT за ₽ по курсу 88 ₽</div>
         </div>
       </div>
       <div class="step">
         <div class="step-num">02</div>
         <div class="step-content">
-          <div class="step-title">Переведите USDT</div>
-          <div class="step-desc">Вставьте чек из Crypto Bot или xRocket — менеджер проверит и зачислит баланс</div>
+          <div class="step-title">Создайте заявку</div>
+          <div class="step-desc">При продаже — укажите реквизиты и банк. При покупке — укажите USDT кошелёк TRC-20</div>
         </div>
       </div>
       <div class="step">
         <div class="step-num">03</div>
         <div class="step-content">
-          <div class="step-title">Получите рубли</div>
-          <div class="step-desc">После подтверждения транзакции рубли придут на ваши реквизиты</div>
+          <div class="step-title">Переведите средства</div>
+          <div class="step-desc">При продаже USDT — пополните баланс через чек. При покупке — менеджер выдаст реквизиты в течение 5–10 минут</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <div class="step-title">Получите деньги</div>
+          <div class="step-desc">После подтверждения рубли придут на ваши реквизиты, USDT — на указанный кошелёк</div>
         </div>
       </div>
     </div>
@@ -485,8 +532,18 @@
           <svg viewBox="0 0 20 20" fill="none" stroke="#D4A843" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h14M10 3l7 7-7 7"/></svg>
         </div>
         <div class="action-text">
-          <div class="action-title">Обменять USDT → ₽</div>
-          <div class="action-sub">Курс 79 ₽ · Мин. 5 000 ₽</div>
+          <div class="action-title">Продать USDT → ₽</div>
+          <div class="action-sub">Курс 79 ₽ · Мин. 4 000 ₽</div>
+        </div>
+        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
+      </div>
+      <div class="action-item" onclick="openBuyModal()">
+        <div class="action-icon" style="background:var(--green-dim)">
+          <svg viewBox="0 0 20 20" fill="none" stroke="var(--green)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 10H3M10 3L3 10l7 7"/></svg>
+        </div>
+        <div class="action-text">
+          <div class="action-title">Купить USDT за ₽</div>
+          <div class="action-sub">Курс 88 ₽ · Мин. 4 000 ₽</div>
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
@@ -626,7 +683,7 @@
     <svg class="nav-icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L11 3l8 6.5V19a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5Z"/><path d="M8 20v-8h6v8"/></svg>
     <div class="nav-label">Главная</div>
   </div>
-  <div class="nav-item" id="nav-exchange" onclick="openExchangeModal()">
+  <div class="nav-item" id="nav-exchange" onclick="openDirectionPicker()">
     <svg class="nav-icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h14M14 3l4 4-4 4M18 15H4M8 11l-4 4 4 4"/></svg>
     <div class="nav-label">Обмен</div>
   </div>
@@ -659,7 +716,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Сумма USDT</label>
-        <input class="form-input" type="number" id="ex-usdt" placeholder="Мин. ~64 USDT" inputmode="decimal" oninput="updateExchangeCalc()">
+        <input class="form-input" type="number" id="ex-usdt" placeholder="Мин. ~51 USDT" inputmode="decimal" oninput="updateExchangeCalc()">
       </div>
       <div class="form-group">
         <label class="form-label">Вы получите</label>
@@ -671,6 +728,10 @@
       <div class="form-group">
         <label class="form-label">Реквизиты для получения ₽</label>
         <input class="form-input" type="text" id="ex-requisites" placeholder="Номер карты или телефон (СБП)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Банк</label>
+        <input class="form-input" type="text" id="ex-bank" placeholder="Например: Сбер, Тинькофф, ВТБ...">
       </div>
       <button class="modal-submit" id="ex-submit-btn" onclick="submitExchange()">
         Создать заявку
@@ -819,6 +880,69 @@
   </div>
 </div>
 
+<!-- ── DIRECTION PICKER MODAL ── -->
+<div class="modal-overlay" id="modal-direction" onclick="closeModalOutside(event,'modal-direction')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Выберите направление</div>
+    <div class="modal-body">
+      <div class="action-item" style="margin-bottom:10px" onclick="closeModal('modal-direction');openExchangeModal()">
+        <div class="action-icon gold">
+          <svg viewBox="0 0 20 20" fill="none" stroke="#D4A843" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h14M10 3l7 7-7 7"/></svg>
+        </div>
+        <div class="action-text">
+          <div class="action-title">Продать USDT → ₽</div>
+          <div class="action-sub">Курс 79 ₽/USDT · Мин. 4 000 ₽</div>
+        </div>
+        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
+      </div>
+      <div class="action-item" onclick="closeModal('modal-direction');openBuyModal()">
+        <div class="action-icon" style="background:var(--green-dim)">
+          <svg viewBox="0 0 20 20" fill="none" stroke="var(--green)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 10H3M10 3L3 10l7 7"/></svg>
+        </div>
+        <div class="action-text">
+          <div class="action-title">Купить USDT за ₽</div>
+          <div class="action-sub">Курс 88 ₽/USDT · Мин. 4 000 ₽</div>
+        </div>
+        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── BUY MODAL ── -->
+<div class="modal-overlay" id="modal-buy" onclick="closeModalOutside(event,'modal-buy')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Купить USDT за ₽</div>
+    <div class="modal-body">
+      <div class="info-box" style="margin-bottom:14px">
+        Укажите сумму в рублях — менеджер выдаст реквизиты для оплаты.<br>
+        <strong>Реквизиты придут в течение 5–10 минут.</strong>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Сумма в рублях</label>
+        <input class="form-input" type="number" id="buy-rub" placeholder="Мин. 4 000 ₽" inputmode="decimal" oninput="updateBuyCalc()" style="-moz-appearance:textfield">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Вы получите</label>
+        <div class="amount-display">
+          <span>USDT</span>
+          <span id="buy-usdt-result" style="color:var(--green)">—</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ваш USDT кошелёк (TRC-20)</label>
+        <input class="form-input" type="text" id="buy-wallet" placeholder="T..." style="font-family:'JetBrains Mono',monospace;font-size:13px">
+      </div>
+      <button class="modal-submit" id="buy-submit-btn" onclick="submitBuy()" style="background:var(--green);color:#0a0a0a">
+        Купить USDT
+      </button>
+      <div class="modal-note">Курс 88 ₽/USDT · Реквизиты в течение 5–10 мин</div>
+    </div>
+  </div>
+</div>
+
 <!-- ── REVIEW MODAL ── -->
 <div class="modal-overlay" id="modal-review" onclick="closeModalOutside(event,'modal-review')">
   <div class="modal">
@@ -852,8 +976,6 @@
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
 
 <script>
-  const RATE = 79;
-  const MIN_RUB = 5000;
   const MANAGER_URL = 'https://t.me/m/lyYDeILpZGUy';
   let currentBalance = null; // tracked globally after loadUser
 
@@ -950,14 +1072,22 @@
         const rub  = Number(o.rub)  || 0;
 
         const statusMap = { pending: 'В обработке', processing: 'Обрабатывается', done: 'Выполнено', cancelled: 'Отменено' };
-        const typeMap   = { exchange: 'Обмен USDT → ₽', deposit: 'Пополнение', withdrawal: 'Вывод USDT' };
+        const typeMap   = { exchange: 'Продажа USDT → ₽', deposit: 'Пополнение', withdrawal: 'Вывод USDT', buy: 'Покупка ₽ → USDT' };
         const typeLabel = typeMap[o.type] || o.type;
 
         const iconPath = o.type === 'exchange'
           ? '<path d="M3 9h12M9 3l6 6-6 6"/>'
           : o.type === 'withdrawal'
             ? '<path d="M9 15V3M3 9l6-6 6 6"/>'
-            : '<path d="M9 3v12M3 9l6 6 6-6"/>';
+            : o.type === 'buy'
+              ? '<path d="M15 9H3M9 3L3 9l6 6"/>'
+              : '<path d="M9 3v12M3 9l6 6 6-6"/>';
+
+        const amountDisplay = o.type === 'buy'
+          ? `<div class="order-usdt" style="color:var(--green)">${Number(o.rub) > 0 ? Math.round(Number(o.rub)).toLocaleString('ru-RU') + ' ₽' : '—'}</div>
+             ${Number(o.usdt) > 0 ? `<div class="order-rub">${Number(o.usdt).toFixed(2)} USDT</div>` : ''}`
+          : `<div class="order-usdt">${usdt > 0 ? usdt.toFixed(2) + ' USDT' : '—'}</div>
+             ${rub > 0 ? `<div class="order-rub">${Math.round(rub).toLocaleString('ru-RU')} ₽</div>` : ''}`;
 
         return `<div class="order-item">
           <div class="order-icon">
@@ -970,8 +1100,7 @@
             <div class="order-date">${formatDate(o.created_at)}</div>
           </div>
           <div class="order-amount">
-            <div class="order-usdt">${usdt > 0 ? usdt.toFixed(2) + ' USDT' : '—'}</div>
-            ${rub > 0 ? `<div class="order-rub">${Math.round(rub).toLocaleString('ru-RU')} ₽</div>` : ''}
+            ${amountDisplay}
             <div class="order-status ${o.status}">${statusMap[o.status] || o.status}</div>
           </div>
         </div>`;
@@ -982,23 +1111,77 @@
     }
   }
 
-  // ── Calculator ──────────────────────────────────────────────────────────────
-  document.getElementById('usdt-input').addEventListener('input', function() {
-    const usdt = parseFloat(this.value);
-    const warning = document.getElementById('calc-warning');
-    const result = document.getElementById('rub-result');
-    const btn = document.getElementById('exchange-btn');
+  const RATE_SELL = 79;  // USDT → RUB
+  const RATE_BUY  = 88;  // RUB → USDT
+  const MIN_RUB_SELL = 4000;
+  const MIN_RUB_BUY  = 4000;
+  let calcDirection = 'sell'; // 'sell' | 'buy'
 
-    if (!usdt || usdt <= 0) {
+  function setDirection(dir) {
+    calcDirection = dir;
+    const sellBtn = document.getElementById('dir-sell');
+    const buyBtn  = document.getElementById('dir-buy');
+    sellBtn.className = 'dir-btn' + (dir === 'sell' ? ' active sell' : '');
+    buyBtn.className  = 'dir-btn' + (dir === 'buy'  ? ' active buy'  : '');
+
+    if (dir === 'sell') {
+      document.getElementById('input-currency').textContent  = 'USDT';
+      document.getElementById('output-currency').textContent = '₽ RUB';
+      document.getElementById('calc-hint').textContent = 'Мин. сумма: 4 000 ₽ · Курс: 79 ₽/USDT';
+      document.getElementById('cta-label').textContent = 'Продать USDT';
+      document.getElementById('exchange-btn').style.background = 'var(--gold)';
+      document.getElementById('main-input').placeholder = '0.00';
+    } else {
+      document.getElementById('input-currency').textContent  = '₽ RUB';
+      document.getElementById('output-currency').textContent = 'USDT';
+      document.getElementById('calc-hint').textContent = 'Мин. сумма: 4 000 ₽ · Курс: 88 ₽/USDT';
+      document.getElementById('cta-label').textContent = 'Купить USDT';
+      document.getElementById('exchange-btn').style.background = 'var(--green)';
+      document.getElementById('main-input').placeholder = '0.00';
+    }
+    document.getElementById('main-input').value = '';
+    document.getElementById('main-result').textContent = '—';
+    document.getElementById('calc-warning').classList.remove('show');
+    document.getElementById('exchange-btn').disabled = false;
+  }
+
+  function calcUpdate() {
+    const val = parseFloat(document.getElementById('main-input').value);
+    const warning = document.getElementById('calc-warning');
+    const result  = document.getElementById('main-result');
+    const btn     = document.getElementById('exchange-btn');
+
+    if (!val || val <= 0) {
       result.textContent = '—'; warning.classList.remove('show'); btn.disabled = false; return;
     }
-    if (usdt * RATE < MIN_RUB) {
-      result.textContent = '—'; warning.classList.add('show'); btn.disabled = true; return;
+
+    if (calcDirection === 'sell') {
+      const rub = val * RATE_SELL;
+      if (rub < MIN_RUB_SELL) {
+        result.textContent = '—';
+        warning.textContent = `Минимальная сумма — 5 000 ₽ (~${(MIN_RUB_SELL/RATE_SELL).toFixed(0)} USDT)`;
+        warning.classList.add('show'); btn.disabled = true; return;
+      }
+      result.textContent = Math.round(rub).toLocaleString('ru-RU');
+    } else {
+      if (val < MIN_RUB_BUY) {
+        result.textContent = '—';
+        warning.textContent = 'Минимальная сумма — 4 000 ₽';
+        warning.classList.add('show'); btn.disabled = true; return;
+      }
+      result.textContent = (val / RATE_BUY).toFixed(2);
     }
     warning.classList.remove('show');
     btn.disabled = false;
-    result.textContent = Math.round(usdt * RATE).toLocaleString('ru-RU');
-  });
+  }
+
+  function handleCalcAction() {
+    if (calcDirection === 'sell') {
+      openExchangeModal();
+    } else {
+      openBuyModal();
+    }
+  }
 
   // ── Page navigation ─────────────────────────────────────────────────────────
   function switchPage(page) {
@@ -1014,15 +1197,56 @@
 
   // ── Modals ──────────────────────────────────────────────────────────────────
   function openExchangeModal() {
-    const usdtVal = document.getElementById('usdt-input').value;
-    if (usdtVal && parseFloat(usdtVal) * RATE >= MIN_RUB) {
-      document.getElementById('ex-usdt').value = usdtVal;
+    const val = document.getElementById('main-input') ? document.getElementById('main-input').value : '';
+    if (calcDirection === 'sell' && val && parseFloat(val) * RATE_SELL >= MIN_RUB_SELL) {
+      document.getElementById('ex-usdt').value = val;
       updateExchangeCalc();
     }
-    // Show current balance in modal
     document.getElementById('ex-balance-display').textContent =
       (currentBalance !== null ? currentBalance.toFixed(2) : '—') + ' USDT';
     openModal('modal-exchange');
+  }
+
+  function openDirectionPicker() {
+    openModal('modal-direction');
+  }
+
+  function openBuyModal() {
+    const val = document.getElementById('main-input') ? document.getElementById('main-input').value : '';
+    if (calcDirection === 'buy' && val && parseFloat(val) >= MIN_RUB_BUY) {
+      document.getElementById('buy-rub').value = val;
+      updateBuyCalc();
+    }
+    openModal('modal-buy');
+  }
+
+  function updateBuyCalc() {
+    const rub = parseFloat(document.getElementById('buy-rub').value);
+    const out = document.getElementById('buy-usdt-result');
+    if (!rub || rub < MIN_RUB_BUY) { out.textContent = '—'; return; }
+    out.textContent = (rub / RATE_BUY).toFixed(2) + ' USDT';
+  }
+
+  async function submitBuy() {
+    const rub = parseFloat(document.getElementById('buy-rub').value);
+    const wallet = document.getElementById('buy-wallet').value.trim();
+    if (!rub || rub < MIN_RUB_BUY) { showToast('Минимум 4 000 ₽', 'error'); return; }
+    if (!wallet || wallet.length < 10) { showToast('Укажите USDT кошелёк (TRC-20)', 'error'); return; }
+    const btn = document.getElementById('buy-submit-btn');
+    btn.disabled = true; btn.textContent = 'Отправка...';
+    try {
+      await api('POST', '/api/buy', { rub, wallet, usdt: parseFloat((rub / RATE_BUY).toFixed(2)) });
+      closeModal('modal-buy');
+      showToast('Заявка создана! Реквизиты придут в течение 5–10 мин', 'success');
+      document.getElementById('buy-rub').value = '';
+      document.getElementById('buy-wallet').value = '';
+      document.getElementById('buy-usdt-result').textContent = '—';
+      if (document.getElementById('main-input')) {
+        document.getElementById('main-input').value = '';
+        document.getElementById('main-result').textContent = '—';
+      }
+    } catch(e) { showToast(e.message, 'error'); }
+    finally { btn.disabled = false; btn.textContent = 'Купить USDT'; }
   }
 
   function openDepositModal() {
@@ -1054,9 +1278,11 @@
   async function submitExchange() {
     const usdt = parseFloat(document.getElementById('ex-usdt').value);
     const requisites = document.getElementById('ex-requisites').value.trim();
+    const bank = document.getElementById('ex-bank').value.trim();
 
-    if (!usdt || usdt * RATE < MIN_RUB) { showToast('Минимум 5 000 ₽ (~64 USDT)', 'error'); return; }
+    if (!usdt || usdt * RATE < MIN_RUB) { showToast('Минимум 4 000 ₽ (~51 USDT)', 'error'); return; }
     if (!requisites || requisites.length < 5) { showToast('Укажите реквизиты для получения ₽', 'error'); return; }
+    if (!bank) { showToast('Укажите банк', 'error'); return; }
 
     // Client-side balance check
     if (currentBalance !== null && usdt > currentBalance) {
@@ -1071,7 +1297,7 @@
     btn.textContent = 'Отправка...';
 
     try {
-      const result = await api('POST', '/api/exchange', { usdt, requisites });
+      const result = await api('POST', '/api/exchange', { usdt, requisites: `${requisites} | ${bank}` });
       currentBalance = result.balance ?? (currentBalance - usdt);
       document.getElementById('wallet-balance').innerHTML =
         `${currentBalance.toFixed(2)} <span>USDT</span>`;
@@ -1080,9 +1306,10 @@
       showToast('Заявка создана! Ожидайте выплаты', 'success');
       document.getElementById('ex-usdt').value = '';
       document.getElementById('ex-requisites').value = '';
+      document.getElementById('ex-bank').value = '';
       document.getElementById('ex-rub').textContent = '—';
-      document.getElementById('usdt-input').value = '';
-      document.getElementById('rub-result').textContent = '—';
+      document.getElementById('usdt-input') && (document.getElementById('usdt-input').value = '');
+      document.getElementById('rub-result') && (document.getElementById('rub-result').textContent = '—');
       loadReviews();
     } catch (e) {
       if (e.message.includes('Недостаточно') || e.message.includes('баланс')) {
@@ -1432,6 +1659,20 @@
   loadUser();
   loadReviews();
   setTimeout(checkAndPromptReview, 2000);
+
+  // Fetch/refresh avatar without needing /start
+  if (initData) {
+    api('POST', '/api/avatar/me', {}).then(data => {
+      if (data && data.avatar_url) {
+        const avatar = document.getElementById('profile-avatar');
+        if (avatar) {
+          avatar.innerHTML = `<img src="${data.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+          avatar.style.background = 'transparent';
+          avatar.style.border = 'none';
+        }
+      }
+    }).catch(() => {});
+  }
 </script>
 
 </body>
