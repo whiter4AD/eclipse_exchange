@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const RATE = 79;
-const MIN_RUB = 5000;
+const MIN_RUB = 4000;
 const TERMS_URL = 'https://telegra.ph/Eclipse-Exchange-05-23';
 
 if (!BOT_TOKEN) { console.error('❌ BOT_TOKEN not set.'); process.exit(1); }
@@ -77,14 +77,32 @@ async function initDB() {
   console.log('✅ Database ready');
 }
 
-// Fetch and save Telegram avatar URL
+// Fetch avatar and return as permanent base64 data URL
 async function getTelegramAvatarUrl(tgId) {
   try {
     const photos = await bot.getUserProfilePhotos(tgId, { limit: 1 });
     if (!photos.total_count) return null;
-    const fileId = photos.photos[0][0].file_id;
+    // Use smallest size to keep DB size reasonable
+    const sizes = photos.photos[0];
+    const fileId = sizes[0].file_id; // smallest
     const file = await bot.getFile(fileId);
-    return `https://api.telegram.org/file/bot${BOT_TOKEN}/${file.file_path}`;
+    const url = `https://api.telegram.org/file/bot${BOT_TOKEN}/${file.file_path}`;
+
+    // Download and convert to base64
+    const response = await new Promise((resolve, reject) => {
+      const https = require('https');
+      const http = require('http');
+      const client = url.startsWith('https') ? https : http;
+      client.get(url, (res) => {
+        const chunks = [];
+        res.on('data', chunk => chunks.push(chunk));
+        res.on('end', () => resolve(Buffer.concat(chunks)));
+        res.on('error', reject);
+      }).on('error', reject);
+    });
+
+    const base64 = response.toString('base64');
+    return `data:image/jpeg;base64,${base64}`;
   } catch(e) {
     return null;
   }
@@ -253,19 +271,19 @@ bot.on('callback_query', async (query_cb) => {
 
     if (action === 'done') {
       await query("UPDATE orders SET status='done' WHERE id=$1", [order.id]);
-      // Only credit balance for crypto check deposits
-      if (order.type === 'deposit' && order.check_url &&
-          !['SIM','QR','СБП'].includes(order.requisites)) {
+      const isCryptoDeposit = order.type === 'deposit' && order.check_url &&
+          !['SIM','QR','СБП'].includes(order.requisites);
+      if (isCryptoDeposit) {
         await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [order.usdt, order.tg_id]);
       }
       try {
-        await bot.sendMessage(order.tg_id,
-          `✅ Заявка #${order.id} выполнена!\n\n` +
-          (order.type === 'exchange' ? `💴 ${Math.round(Number(order.rub)).toLocaleString('ru-RU')} ₽ отправлены на ваши реквизиты.`
+        const msg =
+          order.type === 'exchange'    ? `💴 ${Math.round(Number(order.rub)).toLocaleString('ru-RU')} ₽ отправлены на ваши реквизиты.`
           : order.type === 'withdrawal' ? `💵 Чек на ${Number(order.usdt)} USDT отправлен вам в Telegram.`
-          : isCryptoDeposit ? `💵 ${Number(order.usdt)} USDT зачислены на ваш баланс.`
-          : `✅ Ваша заявка выполнена!`)
-        );
+          : order.type === 'buy'        ? `💵 ${Number(order.usdt).toFixed(2)} USDT отправлены на ваш кошелёк.`
+          : isCryptoDeposit             ? `💵 ${Number(order.usdt)} USDT зачислены на ваш баланс.`
+          : `✅ Ваша заявка выполнена!`;
+        await bot.sendMessage(order.tg_id, `✅ Заявка #${order.id} выполнена!\n\n${msg}`);
       } catch(e) {}
       await bot.answerCallbackQuery(query_cb.id, { text: '✅ Выполнено' });
       await bot.editMessageText(query_cb.message.text + '\n\n✅ ВЫПОЛНЕНО',
@@ -274,6 +292,7 @@ bot.on('callback_query', async (query_cb) => {
 
     if (action === 'cancel') {
       await query("UPDATE orders SET status='cancelled' WHERE id=$1", [order.id]);
+      // Refund balance only for exchange/withdrawal (buy — user hasn't sent money yet)
       if (order.type === 'exchange' || order.type === 'withdrawal') {
         await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [order.usdt, order.tg_id]);
       }
@@ -453,6 +472,51 @@ app.post('/api/withdrawal', authMiddleware, async (req, res) => {
     [user.tg_id, usdt]);
   notifyManager(r.rows[0], user);
   res.json({ success:true, order:r.rows[0], balance:balance-usdt });
+});
+
+// POST /api/buy — buy USDT for RUB
+app.post('/api/buy', authMiddleware, async (req, res) => {
+  const user = await upsertUser(req.tgUser);
+  const { rub, wallet, usdt } = req.body;
+  if (!rub || rub < 4000) return res.status(400).json({ error: 'Минимальная сумма 4 000 ₽' });
+  if (!wallet || wallet.length < 10) return res.status(400).json({ error: 'Укажите USDT кошелёк' });
+
+  const r = await query(
+    `INSERT INTO orders (tg_id, type, usdt, rub, requisites) VALUES ($1, 'buy', $2, $3, $4) RETURNING *`,
+    [user.tg_id, usdt, rub, wallet]
+  );
+  const order = r.rows[0];
+
+  const managerChatId = process.env.MANAGER_CHAT_ID;
+  if (managerChatId) {
+    const userTag = user.username ? `@${user.username}` : `#${user.tg_id}`;
+    const text = `💰 Покупка USDT за ₽\n\n` +
+      `👤 ${userTag} (${user.first_name || ''})\n` +
+      `🆔 Заявка: #${order.id}\n` +
+      `💴 Отдаёт: ${Math.round(rub).toLocaleString('ru-RU')} ₽\n` +
+      `💵 Получает: ${Number(usdt).toFixed(2)} USDT\n` +
+      `👛 Кошелёк: ${wallet}\n` +
+      `⏰ ${formatMsk(order.created_at)}`;
+    try {
+      await bot.sendMessage(managerChatId, text, { reply_markup: { inline_keyboard: [[
+        { text: '✅ Выполнено', callback_data: `done_${order.id}` },
+        { text: '❌ Отклонить', callback_data: `cancel_${order.id}` },
+      ]]}});
+    } catch(e) { console.error('Buy notify error:', e.message); }
+  }
+  res.json({ success: true, order });
+});
+
+// POST /api/avatar/me — refresh avatar on WebApp open (no /start needed)
+app.post('/api/avatar/me', authMiddleware, async (req, res) => {
+  const user = await upsertUser(req.tgUser);
+  // Only re-fetch if no avatar saved yet
+  if (user.avatar_url) return res.json({ avatar_url: user.avatar_url });
+  const avatarUrl = await getTelegramAvatarUrl(user.tg_id);
+  if (avatarUrl) {
+    await query('UPDATE users SET avatar_url=$1 WHERE tg_id=$2', [avatarUrl, user.tg_id]);
+  }
+  res.json({ avatar_url: avatarUrl });
 });
 
 // GET /api/reviews — public, last reviews + count
