@@ -1113,8 +1113,10 @@
 
   const RATE_SELL = 79;  // USDT → RUB
   const RATE_BUY  = 88;  // RUB → USDT
+  const RATE = RATE_SELL; // alias for sell calculations
   const MIN_RUB_SELL = 4000;
   const MIN_RUB_BUY  = 4000;
+  const MIN_RUB = MIN_RUB_SELL; // alias
   let calcDirection = 'sell'; // 'sell' | 'buy'
 
   function setDirection(dir) {
