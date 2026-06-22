@@ -199,7 +199,7 @@ bot.onText(/\/stats/, async (msg) => {
 
 function sendMainMenu(chatId, firstName) {
   bot.sendMessage(chatId,
-    `🌑 *Eclipse Exchange*\n\nОбмен USDT → ₽ по фиксированному курсу.\n\n💰 Курс: *79 ₽/USDT*\n📊 Без скрытых комиссий`,
+    `🌑 *Eclipse Exchange*\n\nОбмен USDT ⇄ ₽ по фиксированному курсу в обе стороны.\n\n💰 Продажа USDT → ₽: *79 ₽/USDT*\n💰 Покупка USDT за ₽: *88 ₽/USDT*\n📊 Без скрытых комиссий`,
     { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[
       { text: '🌑 Открыть обменник', web_app: { url: webAppUrl() } }
     ]]}}
