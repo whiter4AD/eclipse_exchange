@@ -198,6 +198,20 @@
   <div class="section" id="section-broadcast">
     <div class="section-header">Рассылка пользователям</div>
     <div class="broadcast-card">
+
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label" style="font-size:12px;font-weight:600;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;display:block">Фото (необязательно)</label>
+        <div id="photo-drop" onclick="document.getElementById('broadcast-photo').click()"
+             style="border:1px dashed rgba(212,168,67,0.35);border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:var(--bg3)">
+          <input type="file" id="broadcast-photo" accept="image/*" style="display:none" onchange="handleBroadcastPhoto(this)">
+          <div id="photo-preview-wrap">
+            <div style="font-size:26px;margin-bottom:8px">🖼</div>
+            <div style="font-size:13px;font-weight:600;color:var(--gold)">Прикрепить фото</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Файл не выбран</div>
+          </div>
+        </div>
+      </div>
+
       <textarea id="broadcast-text" placeholder="Введите сообщение для рассылки...&#10;&#10;Поддерживается Markdown: *жирный*, _курсив_" oninput="updatePreview()"></textarea>
       <div class="char-count"><span id="char-count">0</span> символов</div>
 
@@ -445,20 +459,66 @@
     updatePreview();
   }
 
+  // ── Photo handling ──────────────────────────────────────────────────────────
+  let broadcastPhotoFile = null;
+
+  function handleBroadcastPhoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+    broadcastPhotoFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      document.getElementById('photo-preview-wrap').innerHTML = `
+        <img src="${e.target.result}" style="max-width:100%;max-height:160px;border-radius:8px;object-fit:contain">
+        <div style="font-size:11px;color:var(--green);margin-top:8px">✅ ${file.name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;text-decoration:underline" onclick="event.stopPropagation();removeBroadcastPhoto()">Удалить фото</div>
+      `;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeBroadcastPhoto() {
+    broadcastPhotoFile = null;
+    document.getElementById('broadcast-photo').value = '';
+    document.getElementById('photo-preview-wrap').innerHTML = `
+      <div style="font-size:26px;margin-bottom:8px">🖼</div>
+      <div style="font-size:13px;font-weight:600;color:var(--gold)">Прикрепить фото</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">Файл не выбран</div>
+    `;
+  }
+
   async function sendBroadcast() {
     const message = document.getElementById('broadcast-text').value.trim();
-    if (!message) { showToast('Введите сообщение', 'error'); return; }
+    if (!message && !broadcastPhotoFile) { showToast('Введите сообщение или прикрепите фото', 'error'); return; }
+
     const btn = document.getElementById('send-btn');
     const result = document.getElementById('broadcast-result');
     btn.disabled = true;
     btn.textContent = 'Отправка...';
     result.style.display = 'none';
+
     try {
-      const data = await api('POST', '/api/admin/broadcast', { message });
+      let data;
+      if (broadcastPhotoFile) {
+        const formData = new FormData();
+        formData.append('message', message);
+        formData.append('photo', broadcastPhotoFile);
+        const response = await fetch('/api/admin/broadcast-photo', {
+          method: 'POST',
+          headers: { 'X-Telegram-Init-Data': initData },
+          body: formData,
+        });
+        data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Ошибка сервера');
+      } else {
+        data = await api('POST', '/api/admin/broadcast', { message });
+      }
+
       result.textContent = `✅ Отправлено: ${data.sent} · Ошибок: ${data.failed}`;
       result.className = 'broadcast-result success';
       result.style.display = 'block';
       document.getElementById('broadcast-text').value = '';
+      removeBroadcastPhoto();
       updatePreview();
     } catch(e) {
       result.textContent = '❌ ' + e.message;
