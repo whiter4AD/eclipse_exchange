@@ -683,6 +683,27 @@ app.post('/api/admin/broadcast', adminMiddleware, async (req, res) => {
   res.json({ success:true, sent, failed });
 });
 
+// POST /api/admin/broadcast-photo — broadcast with photo attachment
+app.post('/api/admin/broadcast-photo', adminMiddleware, upload.single('photo'), async (req, res) => {
+  const { message } = req.body;
+  if (!req.file) return res.status(400).json({ error: 'Фото обязательно' });
+
+  const users = await query("SELECT tg_id FROM users WHERE agreed=1 AND blocked=0");
+  let sent = 0, failed = 0;
+
+  for (const u of users.rows) {
+    try {
+      await bot.sendPhoto(u.tg_id, req.file.buffer, {
+        caption: message || undefined,
+        parse_mode: message ? 'Markdown' : undefined,
+      });
+      sent++;
+    } catch(e) { failed++; }
+    await new Promise(r => setTimeout(r, 50));
+  }
+  res.json({ success: true, sent, failed });
+});
+
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
 // ── Start ─────────────────────────────────────────────────────────────────────
