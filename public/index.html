@@ -1630,7 +1630,7 @@
           data.delta_type === 'percent' ? `${data.delta}%` : `${data.delta} ₽`;
         document.getElementById('ref-invited-value').textContent = data.invited;
         document.getElementById('ref-earned-value').textContent =
-          Math.round(data.earned).toLocaleString('ru-RU') + ' ₽';
+          Number(data.earned).toFixed(2) + ' USDT';
         document.getElementById('ref-no-link').style.display = 'none';
         document.getElementById('ref-has-link').style.display = 'block';
         setRefUnit(data.delta_type);
