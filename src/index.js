@@ -13,8 +13,10 @@ const PORT = process.env.PORT || 3000;
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const RATE = 80;
+const RATE_BUY = 90;
 const MIN_RUB = 4000;
 const TERMS_URL = 'https://telegra.ph/Eclipse-Exchange-05-23';
+const REQUIRE_AGREEMENT = false; // временно отключено по просьбе — верните true, чтобы включить обратно
 
 if (!BOT_TOKEN) { console.error('❌ BOT_TOKEN not set.'); process.exit(1); }
 if (!process.env.DATABASE_URL) { console.error('❌ DATABASE_URL not set.'); process.exit(1); }
@@ -74,6 +76,13 @@ async function initDB() {
   // migrations
   try { await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`); } catch(e) {}
   try { await query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS avatar_url TEXT`); } catch(e) {}
+  // referral program
+  try { await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_code TEXT UNIQUE`); } catch(e) {}
+  try { await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by BIGINT`); } catch(e) {}
+  try { await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_delta NUMERIC`); } catch(e) {}
+  try { await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_delta_type TEXT DEFAULT 'rub'`); } catch(e) {}
+  try { await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ref_tg_id BIGINT`); } catch(e) {}
+  try { await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ref_earn NUMERIC DEFAULT 0`); } catch(e) {}
   console.log('✅ Database ready');
 }
 
@@ -156,13 +165,68 @@ function isAdmin(tgId) {
   return process.env.MANAGER_CHAT_ID && String(tgId) === String(process.env.MANAGER_CHAT_ID);
 }
 
+// ── Referral program ──────────────────────────────────────────────────────────
+async function generateRefCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  for (let attempt = 0; attempt < 10; attempt++) {
+    let code = '';
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    const exists = await query('SELECT 1 FROM users WHERE ref_code=$1', [code]);
+    if (!exists.rows[0]) return code;
+  }
+  throw new Error('Не удалось сгенерировать реферальный код');
+}
+
+// Применяет реферальную наценку/скидку к базовому курсу.
+// direction: 'sell' — пользователь продаёт USDT (получает меньше при наличии реферера),
+//            'buy'  — пользователь покупает USDT (платит больше при наличии реферера).
+function applyReferralRate(baseRate, delta, deltaType, direction) {
+  if (!delta) return baseRate;
+  const diff = deltaType === 'percent' ? baseRate * (Number(delta) / 100) : Number(delta);
+  return direction === 'sell' ? baseRate - diff : baseRate + diff;
+}
+
+// Возвращает { rate, refTgId, refDelta, refDeltaType } — эффективный курс для пользователя
+// с учётом того, кто его пригласил, плюс данные для начисления рефереру.
+async function getEffectiveRate(user, baseRate, direction) {
+  if (!user.referred_by) return { rate: baseRate, refTgId: null };
+  const refUser = await getUser(user.referred_by);
+  if (!refUser || !refUser.ref_delta) return { rate: baseRate, refTgId: null };
+  const rate = applyReferralRate(baseRate, Number(refUser.ref_delta), refUser.ref_delta_type, direction);
+  return { rate, refTgId: refUser.tg_id };
+}
+
+const botUsernameCache = { value: null };
+async function getBotUsername() {
+  if (botUsernameCache.value) return botUsernameCache.value;
+  const me = await bot.getMe();
+  botUsernameCache.value = me.username;
+  return me.username;
+}
+
+function refLink(username, code) {
+  return `https://t.me/${username}?start=ref_${code}`;
+}
+
 // ── Telegram Bot ──────────────────────────────────────────────────────────────
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 const webAppUrl = () => process.env.WEBAPP_URL || 'https://your-app.railway.app';
 
-bot.onText(/\/start/, async (msg) => {
+bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
+  const isNewUser = !(await getUser(msg.from.id));
   const user = await upsertUser({ id: msg.from.id, username: msg.from.username,
     first_name: msg.from.first_name, last_name: msg.from.last_name });
+
+  // Привязываем реферала, только если это новый пользователь и ссылка валидна
+  const payload = match && match[1];
+  if (isNewUser && payload && payload.startsWith('ref_')) {
+    const code = payload.slice(4);
+    const refRes = await query('SELECT tg_id FROM users WHERE ref_code=$1', [code]);
+    const refUser = refRes.rows[0];
+    if (refUser && Number(refUser.tg_id) !== Number(msg.from.id)) {
+      await query('UPDATE users SET referred_by=$1 WHERE tg_id=$2', [refUser.tg_id, msg.from.id]);
+    }
+  }
 
   // Fetch and save avatar in background
   getTelegramAvatarUrl(msg.from.id).then(url => {
@@ -171,7 +235,7 @@ bot.onText(/\/start/, async (msg) => {
 
   if (user.blocked) return bot.sendMessage(msg.chat.id, '🚫 Ваш аккаунт заблокирован.');
 
-  if (!user.agreed) {
+  if (REQUIRE_AGREEMENT && !user.agreed) {
     return bot.sendMessage(msg.chat.id,
       `👋 Привет, *${msg.from.first_name || 'друг'}*!\n\nДобро пожаловать в *Eclipse Exchange*.\n\nПеред началом работы ознакомьтесь с пользовательским соглашением.`,
       { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [
@@ -296,6 +360,10 @@ bot.on('callback_query', async (query_cb) => {
       if (order.type === 'exchange' || order.type === 'withdrawal') {
         await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [order.usdt, order.tg_id]);
       }
+      // Отменяем начисление рефереру, если оно было
+      if (order.ref_tg_id && Number(order.ref_earn) > 0) {
+        await query('UPDATE users SET balance=balance-$1 WHERE tg_id=$2', [order.ref_earn, order.ref_tg_id]);
+      }
       try {
         await bot.sendMessage(order.tg_id, `❌ Заявка #${order.id} отклонена.\nЕсть вопросы — напишите менеджеру.`);
       } catch(e) {}
@@ -353,19 +421,60 @@ app.get('/api/orders', authMiddleware, async (req, res) => {
   res.json(result.rows);
 });
 
+// GET /api/referral — current user's referral link + stats
+app.get('/api/referral', authMiddleware, async (req, res) => {
+  const user = await upsertUser(req.tgUser);
+  if (!user.ref_code || !user.ref_delta) {
+    return res.json({ has_link: false });
+  }
+  const [countRes, earnRes] = await Promise.all([
+    query('SELECT COUNT(*) as c FROM users WHERE referred_by=$1', [user.tg_id]),
+    query('SELECT COALESCE(SUM(ref_earn),0) as s FROM orders WHERE ref_tg_id=$1', [user.tg_id]),
+  ]);
+  const username = await getBotUsername();
+  res.json({
+    has_link: true,
+    link: refLink(username, user.ref_code),
+    delta: Number(user.ref_delta),
+    delta_type: user.ref_delta_type,
+    invited: Number(countRes.rows[0].c),
+    earned: Number(earnRes.rows[0].s),
+  });
+});
+
+// POST /api/referral — create or update the referral rate delta
+app.post('/api/referral', authMiddleware, async (req, res) => {
+  const user = await upsertUser(req.tgUser);
+  const { delta, delta_type } = req.body;
+  const type = delta_type === 'percent' ? 'percent' : 'rub';
+  const value = Number(delta);
+  if (!value || value <= 0 || (type === 'percent' && value >= 100)) {
+    return res.status(400).json({ error: type === 'percent' ? 'Введите число от 0 до 100' : 'Введите положительное число' });
+  }
+  let refCode = user.ref_code;
+  if (!refCode) refCode = await generateRefCode();
+  await query('UPDATE users SET ref_code=$1, ref_delta=$2, ref_delta_type=$3 WHERE tg_id=$4',
+    [refCode, value, type, user.tg_id]);
+  const username = await getBotUsername();
+  res.json({ success: true, link: refLink(username, refCode), delta: value, delta_type: type });
+});
+
 app.post('/api/exchange', authMiddleware, async (req, res) => {
   const user = await upsertUser(req.tgUser);
   const { usdt, requisites } = req.body;
   if (!usdt || typeof usdt!=='number' || usdt<=0) return res.status(400).json({ error:'Некорректная сумма' });
-  const rub = usdt * RATE;
-  if (rub < MIN_RUB) return res.status(400).json({ error:`Минимум ${MIN_RUB} ₽ (~${(MIN_RUB/RATE).toFixed(2)} USDT)` });
+  const { rate, refTgId } = await getEffectiveRate(user, RATE, 'sell');
+  const rub = usdt * rate;
+  if (rub < MIN_RUB) return res.status(400).json({ error:`Минимум ${MIN_RUB} ₽ (~${(MIN_RUB/rate).toFixed(2)} USDT)` });
   if (!requisites || requisites.trim().length<5) return res.status(400).json({ error:'Укажите реквизиты' });
   const balance = Number(user.balance);
   if (balance < usdt) return res.status(400).json({
     error:`Недостаточно средств. Баланс: ${balance.toFixed(2)} USDT`, code:'INSUFFICIENT_BALANCE', balance });
+  const refEarn = refTgId ? Number((usdt * (RATE - rate)).toFixed(2)) : 0;
   await query('UPDATE users SET balance=balance-$1 WHERE tg_id=$2', [usdt, user.tg_id]);
-  const r = await query(`INSERT INTO orders (tg_id,type,usdt,rub,requisites) VALUES ($1,'exchange',$2,$3,$4) RETURNING *`,
-    [user.tg_id, usdt, rub, requisites.trim()]);
+  if (refTgId && refEarn > 0) await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [refEarn, refTgId]);
+  const r = await query(`INSERT INTO orders (tg_id,type,usdt,rub,requisites,ref_tg_id,ref_earn) VALUES ($1,'exchange',$2,$3,$4,$5,$6) RETURNING *`,
+    [user.tg_id, usdt, rub, requisites.trim(), refTgId, refEarn]);
   notifyManager(r.rows[0], user);
   res.json({ success:true, order:r.rows[0], balance:balance-usdt });
 });
@@ -477,15 +586,20 @@ app.post('/api/withdrawal', authMiddleware, async (req, res) => {
 // POST /api/buy — buy USDT for RUB
 app.post('/api/buy', authMiddleware, async (req, res) => {
   const user = await upsertUser(req.tgUser);
-  const { rub, wallet, usdt } = req.body;
+  const { rub, wallet } = req.body;
   if (!rub || rub < 4000) return res.status(400).json({ error: 'Минимальная сумма 4 000 ₽' });
   if (!wallet || wallet.length < 10) return res.status(400).json({ error: 'Укажите USDT кошелёк' });
 
+  const { rate, refTgId } = await getEffectiveRate(user, RATE_BUY, 'buy');
+  const usdt = Number((rub / rate).toFixed(2));
+  const refEarn = refTgId ? Number((usdt * (rate - RATE_BUY)).toFixed(2)) : 0;
+
   const r = await query(
-    `INSERT INTO orders (tg_id, type, usdt, rub, requisites) VALUES ($1, 'buy', $2, $3, $4) RETURNING *`,
-    [user.tg_id, usdt, rub, wallet]
+    `INSERT INTO orders (tg_id, type, usdt, rub, requisites, ref_tg_id, ref_earn) VALUES ($1, 'buy', $2, $3, $4, $5, $6) RETURNING *`,
+    [user.tg_id, usdt, rub, wallet, refTgId, refEarn]
   );
   const order = r.rows[0];
+  if (refTgId && refEarn > 0) await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [refEarn, refTgId]);
 
   const managerChatId = process.env.MANAGER_CHAT_ID;
   if (managerChatId) {
