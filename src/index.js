@@ -12,7 +12,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
-const RATE = 79;
+const RATE = 80;
 const MIN_RUB = 4000;
 const TERMS_URL = 'https://telegra.ph/Eclipse-Exchange-05-23';
 
@@ -199,7 +199,7 @@ bot.onText(/\/stats/, async (msg) => {
 
 function sendMainMenu(chatId, firstName) {
   bot.sendMessage(chatId,
-    `🌑 *Eclipse Exchange*\n\nОбмен USDT ⇄ ₽ по фиксированному курсу в обе стороны.\n\n💰 Продажа USDT → ₽: *79 ₽/USDT*\n💰 Покупка USDT за ₽: *88 ₽/USDT*\n📊 Без скрытых комиссий`,
+    `🌑 *Eclipse Exchange*\n\nОбмен USDT ⇄ ₽ по фиксированному курсу в обе стороны.\n\n💰 Продажа USDT → ₽: *80 ₽/USDT*\n💰 Покупка USDT за ₽: *90 ₽/USDT*\n📊 Без скрытых комиссий`,
     { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[
       { text: '🌑 Открыть обменник', web_app: { url: webAppUrl() } }
     ]]}}
