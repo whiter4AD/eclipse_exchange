@@ -418,7 +418,7 @@
         <div style="flex:1">
           <div class="rate-label">Продажа USDT</div>
           <div class="rate-main">
-            <div class="rate-value" style="font-size:30px">79.00</div>
+            <div class="rate-value" style="font-size:30px">80.00</div>
             <div class="rate-unit" style="font-size:13px">₽</div>
           </div>
           <div class="rate-sub" style="font-size:11px">USDT → ₽</div>
@@ -427,7 +427,7 @@
         <div style="flex:1;padding-left:10px">
           <div class="rate-label">Покупка USDT</div>
           <div class="rate-main">
-            <div class="rate-value" style="font-size:30px;color:var(--green)">88.00</div>
+            <div class="rate-value" style="font-size:30px;color:var(--green)">90.00</div>
             <div class="rate-unit" style="font-size:13px">₽</div>
           </div>
           <div class="rate-sub" style="font-size:11px">₽ → USDT</div>
@@ -483,7 +483,7 @@
         </div>
       </div>
       <div class="calc-warning" id="calc-warning"></div>
-      <div class="calc-min-hint" id="calc-hint">Мин. сумма: 4 000 ₽ · Курс: 79 ₽/USDT</div>
+      <div class="calc-min-hint" id="calc-hint">Мин. сумма: 4 000 ₽ · Курс: 80 ₽/USDT</div>
     </div>
 
     <div class="cta-wrap">
@@ -499,7 +499,7 @@
         <div class="step-num">01</div>
         <div class="step-content">
           <div class="step-title">Выберите направление</div>
-          <div class="step-desc">Продажа USDT → ₽ по курсу 79 ₽ или покупка USDT за ₽ по курсу 88 ₽</div>
+          <div class="step-desc">Продажа USDT → ₽ по курсу 80 ₽ или покупка USDT за ₽ по курсу 90 ₽</div>
         </div>
       </div>
       <div class="step">
@@ -533,7 +533,7 @@
         </div>
         <div class="action-text">
           <div class="action-title">Продать USDT → ₽</div>
-          <div class="action-sub">Курс 79 ₽ · Мин. 4 000 ₽</div>
+          <div class="action-sub">Курс 80 ₽ · Мин. 4 000 ₽</div>
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
@@ -543,7 +543,7 @@
         </div>
         <div class="action-text">
           <div class="action-title">Купить USDT за ₽</div>
-          <div class="action-sub">Курс 88 ₽ · Мин. 4 000 ₽</div>
+          <div class="action-sub">Курс 90 ₽ · Мин. 4 000 ₽</div>
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
@@ -736,7 +736,7 @@
       <button class="modal-submit" id="ex-submit-btn" onclick="submitExchange()">
         Создать заявку
       </button>
-      <div class="modal-note">Курс 79 ₽/USDT · Без комиссии · Выплата в течение 15–30 мин</div>
+      <div class="modal-note">Курс 80 ₽/USDT · Без комиссии · Выплата в течение 15–30 мин</div>
     </div>
   </div>
 </div>
@@ -892,7 +892,7 @@
         </div>
         <div class="action-text">
           <div class="action-title">Продать USDT → ₽</div>
-          <div class="action-sub">Курс 79 ₽/USDT · Мин. 4 000 ₽</div>
+          <div class="action-sub">Курс 80 ₽/USDT · Мин. 4 000 ₽</div>
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
@@ -902,7 +902,7 @@
         </div>
         <div class="action-text">
           <div class="action-title">Купить USDT за ₽</div>
-          <div class="action-sub">Курс 88 ₽/USDT · Мин. 4 000 ₽</div>
+          <div class="action-sub">Курс 90 ₽/USDT · Мин. 4 000 ₽</div>
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
@@ -938,7 +938,7 @@
       <button class="modal-submit" id="buy-submit-btn" onclick="submitBuy()" style="background:var(--green);color:#0a0a0a">
         Купить USDT
       </button>
-      <div class="modal-note">Курс 88 ₽/USDT · Реквизиты в течение 5–10 мин</div>
+      <div class="modal-note">Курс 90 ₽/USDT · Реквизиты в течение 5–10 мин</div>
     </div>
   </div>
 </div>
@@ -1111,8 +1111,8 @@
     }
   }
 
-  const RATE_SELL = 79;  // USDT → RUB
-  const RATE_BUY  = 88;  // RUB → USDT
+  const RATE_SELL = 80;  // USDT → RUB
+  const RATE_BUY  = 90;  // RUB → USDT
   const RATE = RATE_SELL; // alias for sell calculations
   const MIN_RUB_SELL = 4000;
   const MIN_RUB_BUY  = 4000;
@@ -1129,14 +1129,14 @@
     if (dir === 'sell') {
       document.getElementById('input-currency').textContent  = 'USDT';
       document.getElementById('output-currency').textContent = '₽ RUB';
-      document.getElementById('calc-hint').textContent = 'Мин. сумма: 4 000 ₽ · Курс: 79 ₽/USDT';
+      document.getElementById('calc-hint').textContent = 'Мин. сумма: 4 000 ₽ · Курс: 80 ₽/USDT';
       document.getElementById('cta-label').textContent = 'Продать USDT';
       document.getElementById('exchange-btn').style.background = 'var(--gold)';
       document.getElementById('main-input').placeholder = '0.00';
     } else {
       document.getElementById('input-currency').textContent  = '₽ RUB';
       document.getElementById('output-currency').textContent = 'USDT';
-      document.getElementById('calc-hint').textContent = 'Мин. сумма: 4 000 ₽ · Курс: 88 ₽/USDT';
+      document.getElementById('calc-hint').textContent = 'Мин. сумма: 4 000 ₽ · Курс: 90 ₽/USDT';
       document.getElementById('cta-label').textContent = 'Купить USDT';
       document.getElementById('exchange-btn').style.background = 'var(--green)';
       document.getElementById('main-input').placeholder = '0.00';
