@@ -83,6 +83,7 @@ async function initDB() {
   try { await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_delta_type TEXT DEFAULT 'rub'`); } catch(e) {}
   try { await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ref_tg_id BIGINT`); } catch(e) {}
   try { await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ref_earn NUMERIC DEFAULT 0`); } catch(e) {}
+  try { await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ref_earn_usdt NUMERIC DEFAULT 0`); } catch(e) {}
   console.log('✅ Database ready');
 }
 
@@ -361,8 +362,8 @@ bot.on('callback_query', async (query_cb) => {
         await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [order.usdt, order.tg_id]);
       }
       // Отменяем начисление рефереру, если оно было
-      if (order.ref_tg_id && Number(order.ref_earn) > 0) {
-        await query('UPDATE users SET balance=balance-$1 WHERE tg_id=$2', [order.ref_earn, order.ref_tg_id]);
+      if (order.ref_tg_id && Number(order.ref_earn_usdt) > 0) {
+        await query('UPDATE users SET balance=balance-$1 WHERE tg_id=$2', [order.ref_earn_usdt, order.ref_tg_id]);
       }
       try {
         await bot.sendMessage(order.tg_id, `❌ Заявка #${order.id} отклонена.\nЕсть вопросы — напишите менеджеру.`);
@@ -429,7 +430,7 @@ app.get('/api/referral', authMiddleware, async (req, res) => {
   }
   const [countRes, earnRes] = await Promise.all([
     query('SELECT COUNT(*) as c FROM users WHERE referred_by=$1', [user.tg_id]),
-    query('SELECT COALESCE(SUM(ref_earn),0) as s FROM orders WHERE ref_tg_id=$1', [user.tg_id]),
+    query('SELECT COALESCE(SUM(ref_earn_usdt),0) as s FROM orders WHERE ref_tg_id=$1', [user.tg_id]),
   ]);
   const username = await getBotUsername();
   res.json({
@@ -470,11 +471,12 @@ app.post('/api/exchange', authMiddleware, async (req, res) => {
   const balance = Number(user.balance);
   if (balance < usdt) return res.status(400).json({
     error:`Недостаточно средств. Баланс: ${balance.toFixed(2)} USDT`, code:'INSUFFICIENT_BALANCE', balance });
-  const refEarn = refTgId ? Number((usdt * (RATE - rate)).toFixed(2)) : 0;
+  const refEarnRub = refTgId ? Number((usdt * (RATE - rate)).toFixed(2)) : 0;
+  const refEarnUsdt = refTgId ? Number((refEarnRub / RATE).toFixed(2)) : 0;
   await query('UPDATE users SET balance=balance-$1 WHERE tg_id=$2', [usdt, user.tg_id]);
-  if (refTgId && refEarn > 0) await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [refEarn, refTgId]);
-  const r = await query(`INSERT INTO orders (tg_id,type,usdt,rub,requisites,ref_tg_id,ref_earn) VALUES ($1,'exchange',$2,$3,$4,$5,$6) RETURNING *`,
-    [user.tg_id, usdt, rub, requisites.trim(), refTgId, refEarn]);
+  if (refTgId && refEarnUsdt > 0) await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [refEarnUsdt, refTgId]);
+  const r = await query(`INSERT INTO orders (tg_id,type,usdt,rub,requisites,ref_tg_id,ref_earn,ref_earn_usdt) VALUES ($1,'exchange',$2,$3,$4,$5,$6,$7) RETURNING *`,
+    [user.tg_id, usdt, rub, requisites.trim(), refTgId, refEarnRub, refEarnUsdt]);
   notifyManager(r.rows[0], user);
   res.json({ success:true, order:r.rows[0], balance:balance-usdt });
 });
@@ -592,14 +594,15 @@ app.post('/api/buy', authMiddleware, async (req, res) => {
 
   const { rate, refTgId } = await getEffectiveRate(user, RATE_BUY, 'buy');
   const usdt = Number((rub / rate).toFixed(2));
-  const refEarn = refTgId ? Number((usdt * (rate - RATE_BUY)).toFixed(2)) : 0;
+  const refEarnRub = refTgId ? Number((usdt * (rate - RATE_BUY)).toFixed(2)) : 0;
+  const refEarnUsdt = refTgId ? Number((refEarnRub / RATE_BUY).toFixed(2)) : 0;
 
   const r = await query(
-    `INSERT INTO orders (tg_id, type, usdt, rub, requisites, ref_tg_id, ref_earn) VALUES ($1, 'buy', $2, $3, $4, $5, $6) RETURNING *`,
-    [user.tg_id, usdt, rub, wallet, refTgId, refEarn]
+    `INSERT INTO orders (tg_id, type, usdt, rub, requisites, ref_tg_id, ref_earn, ref_earn_usdt) VALUES ($1, 'buy', $2, $3, $4, $5, $6, $7) RETURNING *`,
+    [user.tg_id, usdt, rub, wallet, refTgId, refEarnRub, refEarnUsdt]
   );
   const order = r.rows[0];
-  if (refTgId && refEarn > 0) await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [refEarn, refTgId]);
+  if (refTgId && refEarnUsdt > 0) await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [refEarnUsdt, refTgId]);
 
   const managerChatId = process.env.MANAGER_CHAT_ID;
   if (managerChatId) {
