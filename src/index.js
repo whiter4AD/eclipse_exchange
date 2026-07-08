@@ -407,13 +407,30 @@ app.get('/api/me', authMiddleware, async (req, res) => {
       SUM(CASE WHEN type='exchange' AND status='done' THEN usdt ELSE 0 END) as total_usdt
     FROM orders WHERE tg_id=$1`, [user.tg_id]);
   const s = stats.rows[0];
+
+  // Персональный курс, если пользователя пригласили по реф-ссылке
+  let referral = null;
+  if (user.referred_by) {
+    const refUser = await getUser(user.referred_by);
+    if (refUser && refUser.ref_delta) {
+      referral = {
+        referrer_name: refUser.username ? `@${refUser.username}` : (refUser.first_name || 'пользователь'),
+        delta: Number(refUser.ref_delta),
+        delta_type: refUser.ref_delta_type,
+        sell_rate: applyReferralRate(RATE, Number(refUser.ref_delta), refUser.ref_delta_type, 'sell'),
+        buy_rate: applyReferralRate(RATE_BUY, Number(refUser.ref_delta), refUser.ref_delta_type, 'buy'),
+      };
+    }
+  }
+
   res.json({ id:user.tg_id, username:user.username, first_name:user.first_name,
     last_name:user.last_name, balance:Number(user.balance), agreed:user.agreed,
     avatar_url:user.avatar_url || null,
     created_at:user.created_at, stats:{
       total_orders:Number(s.total_orders)||0,
       done_orders:Number(s.done_orders)||0,
-      total_usdt:Number(s.total_usdt)||0 }});
+      total_usdt:Number(s.total_usdt)||0 },
+    referral });
 });
 
 app.get('/api/orders', authMiddleware, async (req, res) => {
