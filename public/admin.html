@@ -4,24 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Eclipse — Админ</title>
+<script>try{if(JSON.parse(localStorage.getItem('ee_settings')||'{}').light)document.documentElement.dataset.theme='light'}catch(e){}</script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:#0a0a0a; --bg2:#111111; --bg3:#181818; --bg4:#202020;
-    --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.13);
-    --gold:#D4A843; --gold-dim:rgba(212,168,67,0.12); --gold-dim2:rgba(212,168,67,0.22);
-    --text:#F0EDE8; --text2:#9A9590; --text3:#5A5650;
-    --green:#3DD68C; --green-dim:rgba(61,214,140,0.12);
-    --red:#FF5555; --red-dim:rgba(255,85,85,0.12);
-    --blue:#4A9EFF; --blue-dim:rgba(74,158,255,0.12);
+    --bg:#05070D; --bg2:#0B0F1A; --bg3:#111726; --bg4:#182033;
+    --border:rgba(160,175,255,0.08); --border2:rgba(160,175,255,0.15);
+    --accent:#8B8CFF; --accent-rgb:139,140,255; --accent-dim:rgba(139,140,255,0.12); --accent-dim2:rgba(139,140,255,0.22);
+    --accent2:#22D3EE; --accent2-rgb:34,211,238; --accent2-dim:rgba(34,211,238,0.12);
+    --text:#EAF0FF; --text2:#97A0B8; --text3:#5F6A86;
+    --red:#FF5C6C; --red-dim:rgba(255,92,108,0.12); --blue:#6EA8FF; --blue-dim:rgba(110,168,255,0.12);
+    --on-accent:#06080F; color-scheme:dark;
+  }
+  :root[data-theme="light"] {
+    --bg:#F3F5FB; --bg2:#FFFFFF; --bg3:#EEF1F9; --bg4:#E3E8F4;
+    --border:rgba(20,30,70,0.08); --border2:rgba(20,30,70,0.15);
+    --accent:#5B5BD6; --accent-rgb:91,91,214; --accent-dim:rgba(91,91,214,0.10); --accent-dim2:rgba(91,91,214,0.18);
+    --accent2:#0891B2; --accent2-rgb:8,145,178; --accent2-dim:rgba(8,145,178,0.10);
+    --text:#0F172A; --text2:#46506A; --text3:#7A859F;
+    --red:#DC2626; --red-dim:rgba(220,38,38,0.10); --blue:#2563EB; --blue-dim:rgba(37,99,235,0.10);
+    --on-accent:#FFFFFF; color-scheme:light;
   }
   * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
   body { background:var(--bg); color:var(--text); font-family:'Space Grotesk',sans-serif;
     min-height:100vh; -webkit-font-smoothing:antialiased; }
   body::before {
     content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
-    background:radial-gradient(ellipse 80% 40% at 50% -5%, rgba(212,168,67,0.07) 0%, transparent 60%);
+    background:radial-gradient(ellipse 80% 40% at 50% -5%, rgba(var(--accent-rgb),0.07) 0%, transparent 60%);
   }
   .app { position:relative; z-index:1; max-width:430px; margin:0 auto; padding-bottom:30px; }
 
@@ -37,7 +47,7 @@
   .tab { flex:1; padding:9px 6px; border-radius:10px; background:var(--bg2);
     border:0.5px solid var(--border); font-size:11px; font-weight:600;
     color:var(--text3); cursor:pointer; text-align:center; transition:all 0.15s; }
-  .tab.active { background:var(--gold-dim2); border-color:rgba(212,168,67,0.4); color:var(--gold); }
+  .tab.active { background:var(--accent-dim2); border-color:rgba(var(--accent-rgb),0.4); color:var(--accent); }
 
   .section { display:none; padding-top:4px; }
   .section.active { display:block; }
@@ -61,21 +71,21 @@
     margin:0 20px 8px; }
   .user-rank { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600;
     color:var(--text3); width:20px; text-align:center; flex-shrink:0; }
-  .user-rank.gold { color:var(--gold); }
-  .user-avatar { width:36px; height:36px; border-radius:50%; background:var(--gold-dim2);
-    border:0.5px solid rgba(212,168,67,0.3); display:flex; align-items:center;
-    justify-content:center; font-size:14px; font-weight:700; color:var(--gold); flex-shrink:0; }
+  .user-rank.gold { color:var(--accent); }
+  .user-avatar { width:36px; height:36px; border-radius:50%; background:var(--accent-dim2);
+    border:0.5px solid rgba(var(--accent-rgb),0.3); display:flex; align-items:center;
+    justify-content:center; font-size:14px; font-weight:700; color:var(--accent); flex-shrink:0; }
   .user-info { flex:1; min-width:0; }
   .user-name { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .user-tag { font-size:11px; color:var(--text3); margin-top:2px; }
   .user-stats { text-align:right; flex-shrink:0; }
-  .user-orders { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; color:var(--gold); }
+  .user-orders { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; color:var(--accent); }
   .user-vol { font-size:11px; color:var(--text3); margin-top:2px; }
   .block-btn { padding:5px 10px; border-radius:7px; font-size:11px; font-weight:600;
     border:0.5px solid; cursor:pointer; font-family:'Space Grotesk',sans-serif;
     transition:opacity 0.15s; margin-top:6px; }
   .block-btn.block { background:var(--red-dim); border-color:rgba(255,85,85,0.4); color:var(--red); }
-  .block-btn.unblock { background:var(--green-dim); border-color:rgba(61,214,140,0.4); color:var(--green); }
+  .block-btn.unblock { background:var(--accent2-dim); border-color:rgba(var(--accent2-rgb),0.4); color:var(--accent2); }
 
   /* Broadcast */
   .broadcast-card { margin:0 20px; background:var(--bg2); border:0.5px solid var(--border2);
@@ -85,14 +95,14 @@
     padding:13px 14px; font-family:'Space Grotesk',sans-serif; font-size:14px;
     color:var(--text); resize:none; outline:none; height:120px; transition:border-color 0.2s;
   }
-  .broadcast-card textarea:focus { border-color:var(--gold); }
+  .broadcast-card textarea:focus { border-color:var(--accent); }
   .broadcast-card textarea::placeholder { color:var(--text3); }
   .char-count { font-size:11px; color:var(--text3); text-align:right; margin-top:6px; }
   .broadcast-preview { margin-top:12px; padding:12px; background:var(--bg3);
     border:0.5px solid var(--border); border-radius:8px; font-size:13px;
     color:var(--text2); line-height:1.5; min-height:40px; white-space:pre-wrap; word-break:break-word; }
   .broadcast-preview.empty { color:var(--text3); font-style:italic; }
-  .send-btn { width:100%; padding:14px; background:var(--gold); color:#0a0a0a;
+  .send-btn { width:100%; padding:14px; background:var(--accent); color:var(--on-accent);
     border:none; border-radius:10px; font-family:'Space Grotesk',sans-serif;
     font-size:14px; font-weight:700; cursor:pointer; margin-top:14px;
     display:flex; align-items:center; justify-content:center; gap:8px;
@@ -100,7 +110,7 @@
   .send-btn:disabled { opacity:0.4; cursor:not-allowed; }
   .broadcast-result { margin-top:12px; padding:12px; border-radius:8px;
     font-size:13px; font-weight:500; text-align:center; display:none; }
-  .broadcast-result.success { background:var(--green-dim); color:var(--green); border:0.5px solid rgba(61,214,140,0.3); }
+  .broadcast-result.success { background:var(--accent2-dim); color:var(--accent2); border:0.5px solid rgba(var(--accent2-rgb),0.3); }
   .broadcast-result.error { background:var(--red-dim); color:var(--red); border:0.5px solid rgba(255,85,85,0.3); }
   .md-hints { margin-top:12px; display:flex; flex-wrap:wrap; gap:6px; }
   .md-hint { padding:4px 10px; background:var(--bg4); border:0.5px solid var(--border);
@@ -110,7 +120,7 @@
   /* Loading */
   .loading { text-align:center; padding:40px 20px; color:var(--text3); font-size:14px; }
   .spinner { width:24px; height:24px; border:2px solid var(--border2);
-    border-top-color:var(--gold); border-radius:50%; animation:spin 0.8s linear infinite;
+    border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite;
     margin:0 auto 12px; }
   @keyframes spin { to { transform:rotate(360deg); } }
 
@@ -121,14 +131,14 @@
     z-index:300; transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
     white-space:nowrap; }
   .toast.show { transform:translateX(-50%) translateY(0); }
-  .toast.success { border-color:rgba(61,214,140,0.4); color:var(--green); }
+  .toast.success { border-color:rgba(var(--accent2-rgb),0.4); color:var(--accent2); }
   .toast.error { border-color:rgba(255,85,85,0.4); color:var(--red); }
 
   .empty-state { text-align:center; padding:40px 20px; color:var(--text3); }
   .empty-state svg { width:40px; height:40px; margin-bottom:12px; opacity:0.3; }
   .balance-chip { display:inline-block; padding:3px 9px; border-radius:6px;
-    background:var(--gold-dim); border:0.5px solid rgba(212,168,67,0.3);
-    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--gold); }
+    background:var(--accent-dim); border:0.5px solid rgba(var(--accent-rgb),0.3);
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent); }
 </style>
 </head>
 <body>
@@ -149,7 +159,6 @@
   <div class="tabs">
     <div class="tab active" onclick="switchTab('stats')">📊 Стата</div>
     <div class="tab" onclick="switchTab('users')">👥 Юзеры</div>
-    <div class="tab" onclick="switchTab('reviews')">⭐ Отзывы</div>
     <div class="tab" onclick="switchTab('broadcast')">📢 Рассылка</div>
   </div>
 
@@ -188,12 +197,6 @@
     <div id="users-pagination" style="display:flex;gap:8px;padding:12px 20px;justify-content:center"></div>
   </div>
 
-  <!-- REVIEWS -->
-  <div class="section" id="section-reviews">
-    <div class="section-header">Все отзывы</div>
-    <div id="reviews-content" class="loading"><div class="spinner"></div>Загрузка...</div>
-  </div>
-
   <!-- BROADCAST -->
   <div class="section" id="section-broadcast">
     <div class="section-header">Рассылка пользователям</div>
@@ -202,11 +205,11 @@
       <div class="form-group" style="margin-bottom:14px">
         <label class="form-label" style="font-size:12px;font-weight:600;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;display:block">Фото (необязательно)</label>
         <div id="photo-drop" onclick="document.getElementById('broadcast-photo').click()"
-             style="border:1px dashed rgba(212,168,67,0.35);border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:var(--bg3)">
+             style="border:1px dashed rgba(var(--accent-rgb),0.35);border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:var(--bg3)">
           <input type="file" id="broadcast-photo" accept="image/*" style="display:none" onchange="handleBroadcastPhoto(this)">
           <div id="photo-preview-wrap">
             <div style="font-size:26px;margin-bottom:8px">🖼</div>
-            <div style="font-size:13px;font-weight:600;color:var(--gold)">Прикрепить фото</div>
+            <div style="font-size:13px;font-weight:600;color:var(--accent)">Прикрепить фото</div>
             <div style="font-size:11px;color:var(--text3);margin-top:4px">Файл не выбран</div>
           </div>
         </div>
@@ -242,7 +245,7 @@
 <script>
   const tg = window.Telegram?.WebApp;
   let initData = '';
-  if (tg) { tg.expand(); tg.setHeaderColor('#0a0a0a'); tg.setBackgroundColor('#0a0a0a'); initData = tg.initData || ''; }
+  if (tg) { tg.expand(); { const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(); try { tg.setHeaderColor(bg); tg.setBackgroundColor(bg); } catch(e) {} } initData = tg.initData || ''; }
 
   async function api(method, path, body) {
     const opts = { method, headers: { 'Content-Type':'application/json', 'X-Telegram-Init-Data':initData } };
@@ -257,12 +260,11 @@
   function switchTab(tab) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    const tabs = ['stats','users','reviews','broadcast'];
+    const tabs = ['stats','users','broadcast'];
     document.querySelectorAll('.tab')[tabs.indexOf(tab)].classList.add('active');
     document.getElementById('section-' + tab).classList.add('active');
     if (tab === 'stats') loadStats();
     if (tab === 'users') loadUsers();
-    if (tab === 'reviews') loadAdminReviews();
   }
 
   // ── Stats ───────────────────────────────────────────────────────────────────
@@ -274,17 +276,17 @@
       el.innerHTML = `
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-icon" style="background:var(--gold-dim)">
-              <svg viewBox="0 0 16 16" fill="none" stroke="var(--gold)" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+            <div class="stat-icon" style="background:var(--accent-dim)">
+              <svg viewBox="0 0 16 16" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
             </div>
-            <div class="stat-val" style="color:var(--gold)">${s.totalUsers}</div>
+            <div class="stat-val" style="color:var(--accent)">${s.totalUsers}</div>
             <div class="stat-label">Пользователей</div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background:var(--green-dim)">
-              <svg viewBox="0 0 16 16" fill="none" stroke="var(--green)" stroke-width="1.6" stroke-linecap="round"><path d="M8 2v12M2 8h12"/></svg>
+            <div class="stat-icon" style="background:var(--accent2-dim)">
+              <svg viewBox="0 0 16 16" fill="none" stroke="var(--accent2)" stroke-width="1.6" stroke-linecap="round"><path d="M8 2v12M2 8h12"/></svg>
             </div>
-            <div class="stat-val" style="color:var(--green)">${s.newToday}</div>
+            <div class="stat-val" style="color:var(--accent2)">${s.newToday}</div>
             <div class="stat-label">Новых сегодня</div>
           </div>
           <div class="stat-card">
@@ -302,17 +304,17 @@
             <div class="stat-label">Ожидают</div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background:var(--gold-dim)">
-              <svg viewBox="0 0 16 16" fill="none" stroke="var(--gold)" stroke-width="1.6" stroke-linecap="round"><path d="M2 10h12M5 6h6M8 2v12"/></svg>
+            <div class="stat-icon" style="background:var(--accent-dim)">
+              <svg viewBox="0 0 16 16" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round"><path d="M2 10h12M5 6h6M8 2v12"/></svg>
             </div>
-            <div class="stat-val" style="color:var(--gold); font-size:16px">${Math.round(s.totalRub).toLocaleString('ru-RU')}</div>
+            <div class="stat-val" style="color:var(--accent); font-size:16px">${Math.round(s.totalRub).toLocaleString('ru-RU')}</div>
             <div class="stat-label">Оборот ₽ (всего)</div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background:var(--green-dim)">
-              <svg viewBox="0 0 16 16" fill="none" stroke="var(--green)" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v6M6 7h4"/></svg>
+            <div class="stat-icon" style="background:var(--accent2-dim)">
+              <svg viewBox="0 0 16 16" fill="none" stroke="var(--accent2)" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v6M6 7h4"/></svg>
             </div>
-            <div class="stat-val" style="color:var(--green); font-size:16px">${s.totalUsdt.toFixed(2)}</div>
+            <div class="stat-val" style="color:var(--accent2); font-size:16px">${s.totalUsdt.toFixed(2)}</div>
             <div class="stat-label">Оборот USDT (всего)</div>
           </div>
           <div class="stat-card stat-full">
@@ -403,8 +405,8 @@
         const btnStyle = `padding:8px 14px;border-radius:8px;border:0.5px solid var(--border2);
           background:var(--bg2);color:var(--text);font-family:'Space Grotesk',sans-serif;
           font-size:12px;font-weight:600;cursor:pointer;`;
-        const activeBtnStyle = `padding:8px 14px;border-radius:8px;border:0.5px solid rgba(212,168,67,0.4);
-          background:var(--gold-dim2);color:var(--gold);font-family:'Space Grotesk',sans-serif;
+        const activeBtnStyle = `padding:8px 14px;border-radius:8px;border:0.5px solid rgba(var(--accent-rgb),0.4);
+          background:var(--accent-dim2);color:var(--accent);font-family:'Space Grotesk',sans-serif;
           font-size:12px;font-weight:600;cursor:pointer;`;
         pag.innerHTML = `
           <button style="${btnStyle}" ${currentPage===1?'disabled':''} onclick="changePage(${currentPage-1})">← Назад</button>
@@ -470,7 +472,7 @@
     reader.onload = (e) => {
       document.getElementById('photo-preview-wrap').innerHTML = `
         <img src="${e.target.result}" style="max-width:100%;max-height:160px;border-radius:8px;object-fit:contain">
-        <div style="font-size:11px;color:var(--green);margin-top:8px">✅ ${file.name}</div>
+        <div style="font-size:11px;color:var(--accent2);margin-top:8px">✅ ${file.name}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px;text-decoration:underline" onclick="event.stopPropagation();removeBroadcastPhoto()">Удалить фото</div>
       `;
     };
@@ -482,7 +484,7 @@
     document.getElementById('broadcast-photo').value = '';
     document.getElementById('photo-preview-wrap').innerHTML = `
       <div style="font-size:26px;margin-bottom:8px">🖼</div>
-      <div style="font-size:13px;font-weight:600;color:var(--gold)">Прикрепить фото</div>
+      <div style="font-size:13px;font-weight:600;color:var(--accent)">Прикрепить фото</div>
       <div style="font-size:11px;color:var(--text3);margin-top:4px">Файл не выбран</div>
     `;
   }
@@ -538,61 +540,6 @@
     t.className = 'toast ' + type + ' show';
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
-  }
-
-  // ── Admin Reviews ────────────────────────────────────────────────────────────
-  async function loadAdminReviews() {
-    const el = document.getElementById('reviews-content');
-    el.innerHTML = '<div class="loading"><div class="spinner"></div>Загрузка...</div>';
-    try {
-      const data = await api('GET', '/api/admin/reviews');
-      if (!data.reviews.length) {
-        el.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><p>Отзывов нет</p></div>';
-        return;
-      }
-      el.innerHTML = `<div style="padding:0 20px 4px;font-size:12px;color:var(--text3)">Всего: ${data.total} отзывов</div>` +
-        data.reviews.map(r => {
-          const name = [r.first_name, r.last_name].filter(Boolean).join(' ') || r.username || 'Пользователь';
-          const initials = name[0].toUpperCase();
-          const colors = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#DDA0DD','#F0A500'];
-          const color = colors[Number(String(r.tg_id||0).slice(-1)) % colors.length];
-          const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
-          const avatarHtml = r.avatar_url
-            ? `<img src="${r.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.style.background='${color}';this.parentElement.innerHTML='${initials}'">`
-            : initials;
-          const avatarBg = r.avatar_url ? 'transparent' : color;
-          const date = new Date(r.created_at).toLocaleString('ru-RU', { timeZone:'Europe/Moscow', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-          return `<div style="margin:0 20px 8px;background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;padding:14px">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-              <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;overflow:hidden;background:${avatarBg}">${avatarHtml}</div>
-              <div style="flex:1;min-width:0">
-                <div style="font-size:13px;font-weight:600">${name}</div>
-                <div style="font-size:11px;color:var(--text3)">${r.username ? '@'+r.username : 'ID: '+r.tg_id}</div>
-              </div>
-              <div style="text-align:right;flex-shrink:0">
-                <div style="color:var(--gold);font-size:13px">${stars}</div>
-                <div style="font-size:10px;color:var(--text3);margin-top:2px">${date}</div>
-              </div>
-            </div>
-            ${r.text ? `<div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:8px">${r.text}</div>` : ''}
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <div style="font-size:11px;color:var(--text3)">Сделка #${r.order_id} · ${Number(r.usdt).toFixed(2)} USDT</div>
-              <button onclick="deleteReview(${r.id})" style="padding:5px 12px;border-radius:7px;background:var(--red-dim);border:0.5px solid rgba(255,85,85,0.4);color:var(--red);font-size:11px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;">🗑 Удалить</button>
-            </div>
-          </div>`;
-        }).join('');
-    } catch(e) {
-      el.innerHTML = `<div class="empty-state"><p style="color:var(--red)">${e.message}</p></div>`;
-    }
-  }
-
-  async function deleteReview(id) {
-    if (!confirm('Удалить этот отзыв?')) return;
-    try {
-      await api('DELETE', `/api/admin/reviews/${id}`);
-      showToast('Отзыв удалён', 'success');
-      loadAdminReviews();
-    } catch(e) { showToast(e.message, 'error'); }
   }
 
   // Init
