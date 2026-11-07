@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:#05070D; --bg2:#0B0F1A; --bg3:#111726; --bg4:#182033;
+    --bg:#040814; --bg2:#0A1020; --bg3:#10172B; --bg4:#1A2238;
     --border:rgba(160,175,255,0.08); --border2:rgba(160,175,255,0.15);
-    --accent:#8B8CFF; --accent-rgb:139,140,255; --accent-dim:rgba(139,140,255,0.12); --accent-dim2:rgba(139,140,255,0.22);
+    --accent:#5B8DFF; --accent-rgb:91,141,255; --accent-dim:rgba(91,141,255,0.12); --accent-dim2:rgba(91,141,255,0.22);
     --accent2:#22D3EE; --accent2-rgb:34,211,238; --accent2-dim:rgba(34,211,238,0.12);
     --text:#EAF0FF; --text2:#97A0B8; --text3:#5F6A86;
     --red:#FF5C6C; --red-dim:rgba(255,92,108,0.12); --blue:#6EA8FF; --blue-dim:rgba(110,168,255,0.12);
@@ -20,7 +20,7 @@
   :root[data-theme="light"] {
     --bg:#F3F5FB; --bg2:#FFFFFF; --bg3:#EEF1F9; --bg4:#E3E8F4;
     --border:rgba(20,30,70,0.08); --border2:rgba(20,30,70,0.15);
-    --accent:#5B5BD6; --accent-rgb:91,91,214; --accent-dim:rgba(91,91,214,0.10); --accent-dim2:rgba(91,91,214,0.18);
+    --accent:#2B67F5; --accent-rgb:43,103,245; --accent-dim:rgba(43,103,245,0.10); --accent-dim2:rgba(43,103,245,0.18);
     --accent2:#0891B2; --accent2-rgb:8,145,178; --accent2-dim:rgba(8,145,178,0.10);
     --text:#0F172A; --text2:#46506A; --text3:#7A859F;
     --red:#DC2626; --red-dim:rgba(220,38,38,0.10); --blue:#2563EB; --blue-dim:rgba(37,99,235,0.10);
@@ -164,6 +164,13 @@
 
   <!-- STATS -->
   <div class="section active" id="section-stats">
+    <div class="section-header">Приём заявок</div>
+    <div style="margin:0 20px 18px;padding:14px 16px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:8px;font-size:14px"><input type="checkbox" id="st-open" onchange="saveStatus()"> <span id="st-open-label">—</span></label>
+      <span style="font-size:13px;color:var(--text2);margin-left:auto">Операторов на смене:</span>
+      <input id="st-ops" type="number" min="0" max="99" style="width:64px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:8px;padding:8px;color:var(--text);font-family:inherit">
+      <button onclick="saveStatus()" style="background:var(--accent);color:var(--on-accent);border:none;border-radius:8px;padding:9px 14px;font-weight:600;cursor:pointer">Сохранить</button>
+    </div>
     <div class="section-header">Общая статистика</div>
     <div id="stats-content" class="loading">
       <div class="spinner"></div>Загрузка...
@@ -544,6 +551,18 @@
 
   // Init
   loadStats();
+
+  async function loadStatus() {
+    try { const s = await api('GET', '/api/status');
+      document.getElementById('st-open').checked = s.open; document.getElementById('st-ops').value = s.operators;
+      document.getElementById('st-open-label').textContent = s.open ? 'Приём открыт' : 'Приём закрыт';
+    } catch (e) { console.warn(e.message); }
+  }
+  async function saveStatus() {
+    try { await api('POST', '/api/admin/status', { open: document.getElementById('st-open').checked, operators: parseInt(document.getElementById('st-ops').value, 10) || 0 }); await loadStatus(); }
+    catch (e) { alert(e.message); }
+  }
+  loadStatus();
 </script>
 </body>
 </html>
