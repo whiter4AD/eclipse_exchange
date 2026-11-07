@@ -10,18 +10,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:#05070D; --bg2:#0B0F1A; --bg3:#111726; --bg4:#182033;
+    --bg:#040814; --bg2:#0A1020; --bg3:#10172B; --bg4:#1A2238;
     --border:rgba(160,175,255,0.08); --border2:rgba(160,175,255,0.15);
-    --accent:#8B8CFF; --accent-rgb:139,140,255; --accent-dim:rgba(139,140,255,0.12); --accent-dim2:rgba(139,140,255,0.22);
+    --accent:#5B8DFF; --accent-rgb:91,141,255; --accent-solid:#2B67F5; --on-solid:#FFFFFF; --accent-dim:rgba(91,141,255,0.12); --accent-dim2:rgba(91,141,255,0.22);
     --accent2:#22D3EE; --accent2-rgb:34,211,238; --accent2-dim:rgba(34,211,238,0.12);
     --text:#EAF0FF; --text2:#97A0B8; --text3:#5F6A86; --red:#FF5C6C; --pending:#F5B83D;
-    --on-accent:#06080F; --nav-bg:rgba(5,7,13,0.82); --grid:rgba(160,175,255,0.02);
+    --on-accent:#06080F; --nav-bg:rgba(4,8,20,0.82); --grid:rgba(160,175,255,0.02);
     color-scheme: dark;
   }
   :root[data-theme="light"] {
     --bg:#F3F5FB; --bg2:#FFFFFF; --bg3:#EEF1F9; --bg4:#E3E8F4;
     --border:rgba(20,30,70,0.08); --border2:rgba(20,30,70,0.15);
-    --accent:#5B5BD6; --accent-rgb:91,91,214; --accent-dim:rgba(91,91,214,0.10); --accent-dim2:rgba(91,91,214,0.18);
+    --accent:#2B67F5; --accent-rgb:43,103,245; --accent-solid:#2B67F5; --on-solid:#FFFFFF; --accent-dim:rgba(43,103,245,0.10); --accent-dim2:rgba(43,103,245,0.18);
     --accent2:#0891B2; --accent2-rgb:8,145,178; --accent2-dim:rgba(8,145,178,0.10);
     --text:#0F172A; --text2:#46506A; --text3:#7A859F; --red:#DC2626; --pending:#B45309;
     --on-accent:#FFFFFF; --nav-bg:rgba(255,255,255,0.85); --grid:rgba(20,30,70,0.03);
@@ -384,233 +384,206 @@
     display: inline-block;
   }
   @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  /* ── v2: capsule header, floating nav, calculator, filters ── */
+  .app { padding-bottom: 120px; }
+  .cta-btn, .modal-submit { background: var(--accent-solid); color: var(--on-solid); border-radius: 999px; }
+  .topbar-wrap { position: sticky; top: 0; z-index: 60; padding: 12px 16px 6px; }
+  .topbar { height: 60px; border-radius: 30px; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center;
+    font-size: 19px; font-weight: 600; background: linear-gradient(135deg, rgba(var(--accent-rgb),0.12), var(--bg2));
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 8px 30px rgba(0,0,0,0.22); }
+  .bottom-nav { bottom: calc(14px + env(safe-area-inset-bottom)); width: calc(100% - 32px); max-width: 398px; height: 72px; padding: 8px; gap: 4px;
+    border: 1px solid var(--border2); border-top: 1px solid var(--border2); border-radius: 36px; align-items: stretch;
+    background: linear-gradient(135deg, rgba(var(--accent-rgb),0.20), var(--nav-bg) 65%); box-shadow: 0 12px 40px rgba(0,0,0,0.35); }
+  .nav-item { flex: 1; padding: 0; border-radius: 28px; justify-content: center; align-items: center; border: 1px solid transparent; }
+  .nav-item.active { background: rgba(var(--accent-rgb),0.14); border-color: var(--border2); }
+  .nav-icon { width: 27px; height: 27px; }
+  body.no-glass .topbar { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--bg2); }
+  .xc { margin: 0 20px; }
+  .xc-top { background: var(--bg2); border: 1px solid var(--border); border-radius: 26px; padding: 20px 22px 24px; }
+  .xc-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .xc-label { font-size: 15px; color: var(--text2); }
+  .xc-pill { display: flex; align-items: center; gap: 10px; padding: 7px 18px 7px 7px; border-radius: 999px; background: var(--bg4); border: 1px solid var(--border2); font-size: 17px; font-weight: 600; }
+  .xc-coin { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #26A17B; color: #fff; font-weight: 700; font-size: 15px; }
+  .xc-coin.rub { background: var(--accent-solid); }
+  .xc-input { width: 100%; background: none; border: none; outline: none; color: var(--text); font-family: 'Space Grotesk', sans-serif; font-size: 52px; font-weight: 600; margin-top: 14px; padding: 0; -moz-appearance: textfield; }
+  .xc-input::-webkit-outer-spin-button, .xc-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .xc-input::placeholder { color: var(--text3); }
+  .xc-hint { font-size: 14px; color: var(--text3); margin-top: 4px; }
+  .xc-mid { height: 0; position: relative; z-index: 2; }
+  .xc-swap { position: absolute; left: 50%; top: -27px; transform: translateX(-50%); width: 54px; height: 54px; border-radius: 50%; background: #0C1E52; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(var(--accent-rgb),0.3); }
+  .xc-bottom { margin-top: 4px; background: var(--accent-solid); color: #fff; border-radius: 26px; padding: 22px 22px 24px; }
+  .xc-label-w { font-size: 15px; color: rgba(255,255,255,0.88); }
+  .xc-result { font-family: 'Space Grotesk', sans-serif; font-size: 52px; font-weight: 600; line-height: 1.1; margin-top: 14px; color: #fff; word-break: break-all; }
+  .xc-result small { font-size: 26px; }
+  .xc-foot { display: flex; gap: 20px; margin-top: 14px; font-size: 15px; color: rgba(255,255,255,0.92); }
+  .calc-warning { margin: 10px 26px 0; }
+  .opt-title { font-size: 19px; font-weight: 600; padding: 16px 0 4px; }
+  .info-i { display: inline-flex; width: 20px; height: 20px; border: 1.5px solid var(--text3); border-radius: 50%; align-items: center; justify-content: center; font-size: 12px; color: var(--text3); margin-left: 6px; cursor: pointer; }
+  .deals-head { padding: 22px 20px 14px; font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
+  .filters { padding: 0 20px; display: flex; flex-direction: column; gap: 10px; }
+  .f-input, .f-select, .f-date input { width: 100%; height: 54px; border-radius: 20px; background: var(--bg2); border: 1px solid var(--border2); padding: 0 18px; color: var(--text); font-family: inherit; font-size: 16px; outline: none; box-sizing: border-box; }
+  .f-select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238A94AD' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px; }
+  .f-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .f-date span { display: block; font-size: 13px; color: var(--text3); margin: 2px 4px 6px; }
+  .empty-wrap { text-align: center; padding: 56px 24px 20px; }
+  .empty-arrow { color: var(--text3); }
+  .empty-title { font-size: 20px; font-weight: 600; margin-top: 18px; }
+  .empty-sub { font-size: 16px; color: var(--text2); margin-top: 10px; line-height: 1.5; }
+  .pill-btn { margin-top: 22px; padding: 16px 34px; border-radius: 999px; background: var(--accent-solid); color: #fff; font-weight: 600; font-size: 17px; border: none; cursor: pointer; font-family: inherit; box-shadow: 0 10px 30px rgba(var(--accent-rgb),0.3); }
+
+  /* ── v3: onboarding, home cards, exchange wizard ── */
+  .onb { position: fixed; inset: 0; z-index: 300; display: flex; justify-content: center; background: radial-gradient(120% 60% at 50% 100%, rgba(var(--accent-rgb),0.22), var(--bg) 60%); }
+  .onb:not(.ready) .onb-inner { visibility: hidden; }
+  .onb-inner { width: 100%; max-width: 430px; display: flex; flex-direction: column; padding: 14px 18px calc(18px + env(safe-area-inset-bottom)); box-sizing: border-box; }
+  .onb-top { display: flex; align-items: center; gap: 14px; padding: 6px 0 10px; }
+  .onb-seg { flex: 1; display: flex; gap: 6px; } .onb-seg i { flex: 1; height: 3px; border-radius: 2px; background: var(--bg4); } .onb-seg i.on { background: var(--accent-solid); }
+  .onb-skip { background: none; border: none; color: var(--text2); font-size: 15px; font-family: inherit; cursor: pointer; }
+  .onb-body { flex: 1; overflow-y: auto; padding-top: 8px; }
+  .onb-slide { display: none; } .onb-slide.on { display: block; }
+  .onb-slide h2 { font-size: 30px; font-weight: 700; line-height: 1.15; margin: 26px 0 10px; letter-spacing: -0.01em; }
+  .onb-slide p { font-size: 16px; color: var(--text2); line-height: 1.5; margin: 0; }
+  .onb-card { background: var(--bg2); border: 1px solid var(--border2); border-radius: 26px; padding: 22px; }
+  .onb-logo { width: 84px; height: 84px; margin: 6px auto 20px; border-radius: 24px; background: var(--bg3); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; }
+  .onb-coins { display: flex; justify-content: center; align-items: center; gap: 14px; color: var(--text3); }
+  .xc-coin.big { width: 38px; height: 38px; font-size: 18px; } .xc-coin.ton { background: #0098EA; }
+  .onb-cap { text-align: center; font-size: 14px; color: var(--text2); margin-top: 18px; }
+  .onb-list { padding: 6px 18px; } .onb-li { display: flex; gap: 14px; align-items: center; padding: 14px 0; border-top: 1px solid var(--border); } .onb-li:first-child { border-top: none; }
+  .onb-n { width: 28px; height: 28px; border-radius: 50%; background: var(--accent-solid); color: #fff; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .onb-ic { color: var(--text2); width: 28px; display: flex; justify-content: center; flex-shrink: 0; }
+  .onb-lt { font-size: 16px; font-weight: 600; } .onb-ld { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .theme-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .theme-row button { height: 56px; border-radius: 20px; background: var(--bg2); border: 1px solid var(--border2); color: var(--text); font-size: 16px; font-family: inherit; cursor: pointer; }
+  .theme-row button.on { background: rgba(var(--accent-rgb),0.16); border-color: var(--accent); }
+  .onb-check { display: flex; gap: 12px; align-items: center; font-size: 14px; color: var(--text2); margin-top: 14px; } .onb-check:first-child { margin-top: 0; }
+  .onb-check input { width: 22px; height: 22px; accent-color: var(--accent-solid); flex-shrink: 0; }
+  .onb-link { display: block; margin: 8px 0 0; font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: underline; cursor: pointer; }
+  .onb-foot, .x-actions { display: flex; gap: 10px; align-items: center; padding-top: 12px; }
+  .x-actions { padding: 16px 20px 0; } .onb-foot .cta-btn, .x-actions .cta-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-ghost { width: 56px; height: 56px; border-radius: 50%; background: var(--bg2); border: 1px solid var(--border2); color: var(--text); font-size: 22px; cursor: pointer; flex-shrink: 0; font-family: inherit; }
+  .cta-btn:disabled { opacity: 0.45; }
+  .chan-card, .status-card, .rate-card, .timer-card { margin: 12px 20px 0; border-radius: 22px; }
+  .chan-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--bg2); border: 1px solid var(--border2); color: var(--text); cursor: pointer; }
+  .chan-ico, .st-ico { width: 46px; height: 46px; border-radius: 50%; background: rgba(var(--accent-rgb),0.16); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .chan-title, .st-title { font-size: 17px; font-weight: 600; } .chan-desc, .st-sub { font-size: 14px; color: var(--text2); margin-top: 3px; line-height: 1.35; } .st-ops { font-size: 15px; margin-top: 8px; }
+  .status-card { display: flex; gap: 14px; align-items: center; padding: 18px; background: var(--bg2); border: 1px solid var(--border2); }
+  .status-card.closed .st-ico { background: var(--red-dim, rgba(255,92,108,.14)); color: var(--red); }
+  .rate-card { background: var(--accent-solid); color: #fff; padding: 20px; }
+  .rc-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; } .rc-label { font-size: 15px; }
+  .seg { display: flex; padding: 4px; border-radius: 999px; background: rgba(0,0,0,0.22); } .seg button { border: none; background: none; color: rgba(255,255,255,0.85); padding: 9px 18px; border-radius: 999px; font-weight: 600; font-size: 15px; font-family: inherit; cursor: pointer; } .seg button.on { background: #070C1C; color: #fff; }
+  .onb-card .seg { background: var(--bg4); } .onb-card .seg button { color: var(--text2); } .onb-card .seg button.on { background: var(--bg); color: var(--text); }
+  .rc-rate { font-family: 'Space Grotesk', sans-serif; font-size: 56px; font-weight: 600; margin-top: 16px; line-height: 1.05; } .rc-rate span { font-size: 28px; margin-left: 8px; }
+  .rc-upd { font-size: 14px; color: rgba(255,255,255,0.9); margin-top: 6px; }
+  .rc-btn { width: 100%; margin-top: 18px; height: 60px; border-radius: 999px; border: none; background: #070C1C; color: #fff; font-size: 17px; font-weight: 600; font-family: inherit; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; cursor: pointer; } .rc-btn:disabled { opacity: 0.55; }
+  .x-chips { display: flex; gap: 8px; padding: 0 20px; overflow-x: auto; }
+  .chip { display: flex; align-items: center; gap: 8px; padding: 9px 16px 9px 10px; border-radius: 999px; background: var(--bg2); border: 1px solid var(--border2); color: var(--text2); font-size: 15px; white-space: nowrap; }
+  .chip b { width: 24px; height: 24px; border-radius: 50%; background: var(--bg4); display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--text); }
+  .chip.on { background: rgba(var(--accent-rgb),0.18); border-color: var(--accent); color: var(--text); font-weight: 600; } .chip.on b, .chip.done b { background: var(--accent-solid); color: #fff; }
+  .x-closed { margin: 14px 20px 0; padding: 12px 14px; border-radius: 16px; background: var(--red-dim, rgba(255,92,108,.14)); color: var(--red); font-size: 13px; line-height: 1.45; }
+  .asset-menu { display: none; position: absolute; right: 0; top: 52px; z-index: 5; background: var(--bg3); border: 1px solid var(--border2); border-radius: 16px; overflow: hidden; min-width: 120px; }
+  .asset-menu button { display: block; width: 100%; padding: 12px 18px; background: none; border: none; color: var(--text); font-size: 16px; text-align: left; font-family: inherit; cursor: pointer; }
+  .q-chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 20px 0; }
+  .q-chip { height: 46px; border-radius: 999px; background: var(--bg2); border: 1px solid var(--border2); color: var(--text); font-size: 16px; font-family: inherit; cursor: pointer; } .q-chip.on { background: rgba(var(--accent-rgb),0.16); border-color: var(--accent); color: var(--accent); }
+  .timer-card { display: flex; gap: 14px; align-items: center; padding: 6px 4px; }
+  .sum-row { display: flex; justify-content: space-between; gap: 14px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 14px; color: var(--text2); } .sum-row b { color: var(--text); text-align: right; font-weight: 600; word-break: break-word; }
 </style>
 </head>
 <body>
 
 <div class="app">
 
-  <!-- Header -->
-  <div class="header">
-    <div class="logo">
-      <div class="logo-icon">
-        <svg viewBox="0 0 18 18" fill="none">
-          <circle cx="9" cy="9" r="7.5" stroke="var(--accent)" stroke-width="1.2"/>
-          <path d="M9 4.5 L9 9 L12.5 12.5" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round"/>
-          <circle cx="9" cy="9" r="1.5" fill="var(--accent)"/>
-        </svg>
-      </div>
-      <div class="logo-name">Eclipse <span>Exchange</span></div>
-    </div>
-    <div class="status-pill"><div class="status-dot"></div>Онлайн</div>
-  </div>
+  <div class="topbar-wrap"><div class="topbar">Eclipse Exchange</div></div>
 
   <!-- ── HOME PAGE ── -->
   <div class="page active" id="page-home">
-    <div class="rate-hero">
-      <div style="display:flex;gap:10px">
-        <div style="flex:1">
-          <div class="rate-label">Продажа USDT</div>
-          <div class="rate-main">
-            <div class="rate-value" id="hero-rate-sell" style="font-size:30px">—</div>
-            <div class="rate-unit" style="font-size:13px">₽</div>
-          </div>
-          <div class="rate-sub" style="font-size:11px">USDT → ₽</div>
+    <a class="chan-card" id="chan-card" style="display:none" onclick="openChannel()">
+      <span class="chan-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4 3 11l6 2.5L11.5 20l3-4.5L19 18z"/></svg></span>
+      <div style="flex:1;min-width:0"><div class="chan-title" id="chan-title">Наш Telegram-канал</div><div class="chan-desc" id="chan-desc"></div></div>
+      <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
+    </a>
+    <div class="status-card" id="status-card">
+      <span class="st-ico" id="st-icon"></span>
+      <div><div class="st-title" id="st-title">Приём заявок</div><div class="st-sub" id="st-sub">Загрузка…</div><div class="st-ops" id="st-ops"></div></div>
+    </div>
+    <div class="rate-card">
+      <div class="rc-top"><span class="rc-label" id="rc-label">К выплате за 1 USDT</span>
+        <div class="seg"><button id="hs-USDT" class="on" onclick="setHomeAsset('USDT')">USDT</button><button id="hs-TON" onclick="setHomeAsset('TON')">TON</button></div></div>
+      <div class="rc-rate" id="rc-rate">—</div>
+      <div class="rc-upd" id="rc-upd">—</div>
+      <button class="rc-btn" id="rc-btn" onclick="openExchange(homeAsset)"><span id="rc-btn-label">Обменять на рубли</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    </div>
+    <div id="referral-note" style="display:none;margin:12px 20px 0;padding:10px 12px;border-radius:12px;background:var(--accent-dim2);border:0.5px solid var(--accent);font-size:12px;line-height:1.5"></div>
+  </div>
+
+  <!-- ── EXCHANGE PAGE ── -->
+  <div class="page" id="page-exchange">
+    <div class="deals-head" style="font-size:26px;padding-bottom:12px">Из крипты в рубли</div>
+    <div class="x-chips"><div class="chip on" id="chip-1"><b>1</b>Сумма</div><div class="chip" id="chip-2"><b>2</b>Реквизиты</div><div class="chip" id="chip-3"><b>3</b>Проверка</div></div>
+    <div class="x-closed" id="x-closed" style="display:none">⛔ Приём заявок сейчас закрыт. Рассчитать сумму можно, оформить заявку — позже.</div>
+
+    <div id="xs-1">
+      <div class="xc" style="margin-top:14px">
+        <div class="xc-top">
+          <div class="xc-row"><span class="xc-label">Вы отдаёте</span>
+            <div style="position:relative"><div class="xc-pill" onclick="toggleAssetMenu()" style="cursor:pointer"><span class="xc-coin" id="x-coin">₮</span><span id="x-asset">USDT</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></div>
+              <div class="asset-menu" id="x-menu"><button onclick="pickAsset('USDT')">USDT</button><button onclick="pickAsset('TON')">TON</button></div></div></div>
+          <input class="xc-input" type="number" id="x-amount" placeholder="0" inputmode="decimal" oninput="xRecalc()">
+          <div class="xc-hint" id="x-hint">—</div>
         </div>
-        <div style="width:0.5px;background:var(--border2)"></div>
-        <div style="flex:1;padding-left:10px">
-          <div class="rate-label">Покупка USDT</div>
-          <div class="rate-main">
-            <div class="rate-value" id="hero-rate-buy" style="font-size:30px;color:var(--accent2)">—</div>
-            <div class="rate-unit" style="font-size:13px">₽</div>
-          </div>
-          <div class="rate-sub" style="font-size:11px">₽ → USDT</div>
+        <div class="xc-mid"><div class="xc-swap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg></div></div>
+        <div class="xc-bottom">
+          <div class="xc-row"><span class="xc-label-w">Вы получаете</span><span class="xc-label-w">На СБП или карту</span></div>
+          <div class="xc-result" id="x-result">—</div>
+          <div class="xc-foot"><span id="x-rate">Курс —</span><span>Комиссия уже внутри</span></div>
         </div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <div class="rate-badge">Курс зафиксирован · <span id="rate-timer" style="font-family:'JetBrains Mono',monospace">—</span></div>
+      <div class="calc-warning" id="x-warn"></div>
+      <div class="q-chips" id="x-quick"></div>
+      <div class="settings" style="margin-top:14px">
+        <div class="opt-title">Опции заявки</div>
+        <div class="setting-row" style="border-top:none"><div><div class="setting-title">VIP-трафик (High-check) <span class="info-i" onclick="showToast('Приоритетная обработка за счёт сниженного курса','info')">i</span></div>
+          <div class="setting-sub" id="hc-sub">курс ниже на 1 %, выплата от 5 000 ₽, заявка в приоритете у операторов</div></div>
+          <label class="switch"><input type="checkbox" id="hc-toggle" onchange="toggleHighCheck(this.checked)"><span></span></label></div>
       </div>
-      <div id="referral-note" style="display:none;margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--accent-dim2);border:0.5px solid var(--accent);font-size:12px;line-height:1.5;color:var(--text)"></div>
+      <div class="timer-card"><svg width="38" height="38" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--border2)" stroke-width="3"/><circle id="xt-ring" cx="18" cy="18" r="15.9" fill="none" stroke="var(--accent-solid)" stroke-width="3" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0" transform="rotate(-90 18 18)"/></svg>
+        <div><div class="st-title" style="font-size:16px">Курс держим 10 минут</div><div class="st-sub" style="margin-top:2px">Осталось <span id="xt-left">—</span>. После расчёта он не изменится</div></div></div>
+      <div style="padding:6px 20px 0"><button class="cta-btn" id="x-next1" onclick="xGo(2)" disabled>Далее: реквизиты <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
     </div>
 
-    <div class="stats-row">
-      <div class="stat-card"><div class="stat-num" style="color:var(--accent)" id="stat-deals">—</div><div class="stat-label">Сделок</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:var(--accent2)">100%</div><div class="stat-label">Успех</div></div>
-      <div class="stat-card"><div class="stat-num">~15м</div><div class="stat-label">Среднее</div></div>
+    <div id="xs-2" style="display:none">
+      <div class="settings" style="margin-top:14px;padding:16px">
+        <div class="form-group"><label class="form-label">Реквизиты (номер карты / телефон СБП)</label><input class="form-input" type="text" id="x-req" placeholder="Номер карты или телефон"></div>
+        <div class="form-group" style="margin-bottom:0"><label class="form-label">Банк</label><input class="form-input" type="text" id="x-bank" placeholder="Например, Сбербанк"></div>
+      </div>
+      <div class="x-actions"><button class="btn-ghost" onclick="xGo(1)">←</button><button class="cta-btn" onclick="xNext2()">Далее: проверка <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
     </div>
 
-    <div class="section-header">Калькулятор обмена</div>
-
-    <!-- Direction toggle -->
-    <div style="display:flex;gap:8px;padding:0 20px 12px">
-      <button class="dir-btn active" id="dir-sell" onclick="setDirection('sell')">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
-        Продать USDT
-      </button>
-      <button class="dir-btn" id="dir-buy" onclick="setDirection('buy')">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 7H2M6 3L2 7l4 4"/></svg>
-        Купить USDT
-      </button>
+    <div id="xs-3" style="display:none">
+      <div class="info-box" style="margin:14px 20px 0">1. Создайте чек <strong>xRocket</strong> (или Crypto Bot) на сумму заявки.<br>2. Вставьте ссылку на чек — менеджер проверит его и отправит рубли на ваши реквизиты.</div>
+      <div class="settings" style="margin-top:14px;padding:16px">
+        <div class="form-group"><label class="form-label">Ссылка на чек (xRocket / Crypto Bot)</label><input class="form-input" type="url" id="x-check" placeholder="https://t.me/xRocket?start=..."></div>
+        <div id="x-sum"></div>
+      </div>
+      <div class="x-actions"><button class="btn-ghost" onclick="xGo(2)">←</button><button class="cta-btn" id="x-submit" onclick="submitExchange()">Отправить заявку</button></div>
     </div>
-
-    <div class="calc-card">
-      <div class="calc-field">
-        <div class="calc-field-label">Вы отдаёте</div>
-        <div class="calc-input-row">
-          <input class="calc-input" type="number" id="main-input" placeholder="0.00" inputmode="decimal" oninput="calcUpdate()">
-          <div class="calc-currency" id="input-currency">USDT</div>
-        </div>
-      </div>
-      <div class="calc-arrow">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M8 3v10M4 9l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="calc-field">
-        <div class="calc-field-label">Вы получаете</div>
-        <div class="calc-input-row">
-          <div class="calc-result" id="main-result">—</div>
-          <div class="calc-currency" id="output-currency">₽ RUB</div>
-        </div>
-      </div>
-      <div class="calc-warning" id="calc-warning"></div>
-      <div class="calc-min-hint" id="calc-hint">Мин. сумма: 4 000 ₽ · Курс: <span data-rate="sell">—</span> ₽/USDT</div>
-    </div>
-
-    <div class="cta-wrap">
-      <button class="cta-btn" id="exchange-btn" onclick="handleCalcAction()">
-        <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h12M9 3l6 6-6 6"/></svg>
-        <span id="cta-label">Продать USDT</span>
-      </button>
-    </div>
-
-    <div class="section-header">Как это работает</div>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">01</div>
-        <div class="step-content">
-          <div class="step-title">Выберите направление</div>
-          <div class="step-desc">Продажа USDT → ₽ по курсу <span data-rate="sell">—</span> ₽ или покупка USDT за ₽ по курсу <span data-rate="buy">—</span> ₽</div>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">02</div>
-        <div class="step-content">
-          <div class="step-title">Создайте заявку</div>
-          <div class="step-desc">При продаже — укажите реквизиты и банк. При покупке — укажите USDT кошелёк TRC-20</div>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">03</div>
-        <div class="step-content">
-          <div class="step-title">Переведите средства</div>
-          <div class="step-desc">При продаже USDT — пополните баланс через чек. При покупке — менеджер выдаст реквизиты в течение 5–10 минут</div>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">04</div>
-        <div class="step-content">
-          <div class="step-title">Получите деньги</div>
-          <div class="step-desc">После подтверждения рубли придут на ваши реквизиты, USDT — на указанный кошелёк</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section-header">Действия</div>
-    <div class="actions">
-      <div class="action-item" onclick="openExchangeModal()">
-        <div class="action-icon gold">
-          <svg viewBox="0 0 20 20" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h14M10 3l7 7-7 7"/></svg>
-        </div>
-        <div class="action-text">
-          <div class="action-title">Продать USDT → ₽</div>
-          <div class="action-sub">Курс <span data-rate="sell">—</span> ₽ · Мин. 4 000 ₽</div>
-        </div>
-        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      </div>
-      <div class="action-item" onclick="openBuyModal()">
-        <div class="action-icon" style="background:var(--accent2-dim)">
-          <svg viewBox="0 0 20 20" fill="none" stroke="var(--accent2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 10H3M10 3L3 10l7 7"/></svg>
-        </div>
-        <div class="action-text">
-          <div class="action-title">Купить USDT за ₽</div>
-          <div class="action-sub">Курс <span data-rate="buy">—</span> ₽ · Мин. 4 000 ₽</div>
-        </div>
-        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      </div>
-      <div class="action-item" onclick="openDepositModal()">
-        <div class="action-icon gray">
-          <svg viewBox="0 0 20 20" fill="none" stroke="var(--text2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="10" rx="2"/><path d="M7 6V5a3 3 0 0 1 6 0v1"/></svg>
-        </div>
-        <div class="action-text">
-          <div class="action-title">Пополнить баланс</div>
-          <div class="action-sub">Через xRocket или Crypto Bot</div>
-        </div>
-        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      </div>
-      <div class="action-item" onclick="switchPage('deals')">
-        <div class="action-icon gray">
-          <svg viewBox="0 0 20 20" fill="none" stroke="var(--text2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h12M4 10h8M4 14h5"/></svg>
-        </div>
-        <div class="action-text">
-          <div class="action-title">История сделок</div>
-          <div class="action-sub">Все ваши операции</div>
-        </div>
-        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      </div>
-      <div class="action-item" onclick="openModal('modal-sim')">
-        <div class="action-icon gray">
-          <svg viewBox="0 0 20 20" fill="none" stroke="var(--text2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="10" height="16" rx="2"/><path d="M8 15h4"/></svg>
-        </div>
-        <div class="action-text">
-          <div class="action-title">Пополнение SIM</div>
-          <div class="action-sub">Курс 60 ₽/USDT · Баланс телефона</div>
-        </div>
-        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      </div>
-      <div class="action-item" onclick="openModal('modal-qr')">
-        <div class="action-icon gray">
-          <svg viewBox="0 0 20 20" fill="none" stroke="var(--text2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM13 13h4M15 11v4M17 11h-2"/></svg>
-        </div>
-        <div class="action-text">
-          <div class="action-title">Оплата QR</div>
-          <div class="action-sub">Курс 60 ₽/USDT · Прикрепите QR-код</div>
-        </div>
-        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      </div>
-    </div>
-
   </div>
 
   <!-- ── DEALS PAGE ── -->
   <div class="page" id="page-deals">
-    <div class="section-header" style="padding-top:22px">История сделок</div>
-    <div id="orders-list">
-      <div class="history-empty">
-        <svg viewBox="0 0 48 48" fill="none"><rect x="8" y="6" width="32" height="36" rx="4" stroke="currentColor" stroke-width="2"/><path d="M16 18h16M16 24h10M16 30h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        <p>Сделок пока нет</p>
-        <span>Ваши операции появятся здесь</span>
+    <div class="deals-head">Ваши обмены</div>
+    <div class="filters">
+      <input class="f-input" id="f-q" placeholder="Номер, банк, сумма…" oninput="renderOrders()">
+      <div class="f-grid">
+        <select class="f-select" id="f-status" onchange="renderOrders()"><option value="">Все статусы</option><option value="pending">В обработке</option><option value="done">Выполнено</option><option value="cancelled">Отменено</option></select>
+        <select class="f-select" id="f-type" onchange="renderOrders()"><option value="">Все операции</option><option value="exchange">Продажа USDT</option><option value="buy">Покупка USDT</option><option value="deposit">Пополнение</option><option value="withdrawal">Вывод</option></select>
+      </div>
+      <div class="f-grid">
+        <label class="f-date"><span>С даты</span><input type="date" id="f-from" onchange="renderOrders()"></label>
+        <label class="f-date"><span>По дату</span><input type="date" id="f-to" onchange="renderOrders()"></label>
       </div>
     </div>
-  </div>
-
-  <!-- ── WALLET PAGE ── -->
-  <div class="page" id="page-wallet">
-    <div class="section-header" style="padding-top:22px">Баланс</div>
-    <div class="wallet-card">
-      <div class="wallet-balance-label">Доступный баланс</div>
-      <div class="wallet-balance" id="wallet-balance">0.00 <span>USDT</span></div>
-      <div class="wallet-actions">
-        <button class="wallet-btn primary" onclick="openDepositModal()">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 1v12M1 7h12" stroke-linecap="round"/></svg>
-          Пополнить
-        </button>
-        <button class="wallet-btn" onclick="openWithdrawalModal()">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 7h10M8 3l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Вывести
-        </button>
-      </div>
-    </div>
+    <div id="orders-list" style="padding:16px 20px 0"></div>
   </div>
 
   <!-- ── PROFILE PAGE ── -->
@@ -636,9 +609,10 @@
         <span class="profile-stat-label">Объём обменов</span>
         <span class="profile-stat-value" id="profile-volume">—</span>
       </div>
-      <div class="profile-stat-row">
+      <div class="profile-stat-row" id="profile-balance-row" style="display:none;align-items:center">
         <span class="profile-stat-label">Баланс</span>
-        <span class="profile-stat-value" style="color:var(--accent)" id="profile-balance">—</span>
+        <span style="display:flex;align-items:center;gap:10px"><span class="profile-stat-value" style="color:var(--accent)" id="profile-balance">—</span>
+        <button class="pill-btn" style="margin:0;padding:6px 14px;font-size:13px" onclick="openWithdrawalModal()">Вывести</button></span>
       </div>
     </div>
 
@@ -669,6 +643,26 @@
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
+      <div class="action-item" onclick="openModal('modal-sim')">
+        <div class="action-icon gray">
+          <svg viewBox="0 0 20 20" fill="none" stroke="var(--text2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="10" height="16" rx="2"/><path d="M8 15h4"/></svg>
+        </div>
+        <div class="action-text">
+          <div class="action-title">Пополнение SIM</div>
+          <div class="action-sub">Курс 60 ₽/USDT · Баланс телефона</div>
+        </div>
+        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
+      </div>
+      <div class="action-item" onclick="openModal('modal-qr')">
+        <div class="action-icon gray">
+          <svg viewBox="0 0 20 20" fill="none" stroke="var(--text2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM13 13h4M15 11v4M17 11h-2"/></svg>
+        </div>
+        <div class="action-text">
+          <div class="action-title">Оплата QR</div>
+          <div class="action-sub">Курс 60 ₽/USDT · Прикрепите QR-код</div>
+        </div>
+        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
+      </div>
     </div>
 
     <div class="section-header">Оформление и приватность</div>
@@ -688,94 +682,12 @@
 
 </div><!-- /app -->
 
-<!-- Bottom Nav -->
-<nav class="bottom-nav">
-  <div class="nav-item active" id="nav-home" onclick="switchPage('home')">
-    <svg class="nav-icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L11 3l8 6.5V19a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5Z"/><path d="M8 20v-8h6v8"/></svg>
-    <div class="nav-label">Главная</div>
-  </div>
-  <div class="nav-item" id="nav-exchange" onclick="openDirectionPicker()">
-    <svg class="nav-icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h14M14 3l4 4-4 4M18 15H4M8 11l-4 4 4 4"/></svg>
-    <div class="nav-label">Обмен</div>
-  </div>
-  <div class="nav-item" id="nav-wallet" onclick="switchPage('wallet')">
-    <svg class="nav-icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="18" height="13" rx="2"/><path d="M16 12.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0Z" fill="currentColor"/><path d="M2 10h18"/></svg>
-    <div class="nav-label">Баланс</div>
-  </div>
-  <div class="nav-item" id="nav-deals" onclick="switchPage('deals')">
-    <svg class="nav-icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h14M4 11h10M4 15h6"/></svg>
-    <div class="nav-label">Сделки</div>
-  </div>
-  <div class="nav-item" id="nav-profile" onclick="switchPage('profile')">
-    <svg class="nav-icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="8" r="4"/><path d="M3 20c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
-    <div class="nav-label">Профиль</div>
-  </div>
-</nav>
-
-<!-- ── EXCHANGE MODAL ── -->
-<div class="modal-overlay" id="modal-exchange" onclick="closeModalOutside(event,'modal-exchange')">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Заявка на обмен</div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label">Ваш баланс</label>
-        <div class="amount-display">
-          <span>Доступно</span>
-          <span id="ex-balance-display" style="color:var(--accent2)">— USDT</span>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Сумма USDT</label>
-        <input class="form-input" type="number" id="ex-usdt" placeholder="Сумма USDT" inputmode="decimal" oninput="updateExchangeCalc()">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Вы получите</label>
-        <div class="amount-display">
-          <span>Рубли (₽)</span>
-          <span id="ex-rub">—</span>
-        </div>
-      </div>
-      <div id="referral-note-ex" style="display:none;margin:-8px 0 16px;padding:10px 12px;border-radius:12px;background:var(--accent-dim2);border:0.5px solid var(--accent);font-size:12px;line-height:1.5;color:var(--text)"></div>
-      <div class="form-group">
-        <label class="form-label">Реквизиты для получения ₽</label>
-        <input class="form-input" type="text" id="ex-requisites" placeholder="Номер карты или телефон (СБП)">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Банк</label>
-        <input class="form-input" type="text" id="ex-bank" placeholder="Например: Сбер, Тинькофф, ВТБ...">
-      </div>
-      <button class="modal-submit" id="ex-submit-btn" onclick="submitExchange()">
-        Создать заявку
-      </button>
-      <div class="modal-note">Курс <span data-rate="sell">—</span> ₽/USDT · Без комиссии · Выплата в течение 15–30 мин</div>
-    </div>
-  </div>
-</div>
-
-<!-- ── DEPOSIT MODAL ── -->
-<div class="modal-overlay" id="modal-deposit" onclick="closeModalOutside(event,'modal-deposit')">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Пополнить баланс</div>
-    <div class="modal-body">
-      <div class="info-box">
-        Рекомендуем чеки <strong>xRocket</strong>, также принимаем <strong>Crypto Bot</strong>.<br>
-        Укажите сумму и вставьте ссылку — менеджер проверит и зачислит.
-      </div>
-      <div class="form-group">
-        <label class="form-label">Сумма (USDT)</label>
-        <input class="form-input" type="number" id="dep-usdt" placeholder="Например: 63.00" inputmode="decimal" style="-moz-appearance:textfield">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Ссылка на чек</label>
-        <input class="form-input" type="url" id="dep-url" placeholder="https://t.me/xRocket?start=..." inputmode="url">
-      </div>
-      <button class="modal-submit" id="dep-submit-btn" onclick="submitDeposit('check')">Зачислить</button>
-      <div class="modal-note">После проверки менеджером USDT зачислятся на ваш баланс</div>
-    </div>
-  </div>
-</div>
+  <nav class="bottom-nav">
+    <div class="nav-item active" id="nav-home" onclick="switchPage('home')"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></div>
+    <div class="nav-item" id="nav-exchange" onclick="goExchange()"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h15M15 4l4 4-4 4M20 16H5M9 12l-4 4 4 4"/></svg></div>
+    <div class="nav-item" id="nav-deals" onclick="switchPage('deals')"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 12.5 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg></div>
+    <div class="nav-item" id="nav-profile" onclick="switchPage('profile')"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div>
+  </nav>
 
 <!-- ── WITHDRAWAL MODAL ── -->
 <div class="modal-overlay" id="modal-withdrawal" onclick="closeModalOutside(event,'modal-withdrawal')">
@@ -892,70 +804,6 @@
   </div>
 </div>
 
-<!-- ── DIRECTION PICKER MODAL ── -->
-<div class="modal-overlay" id="modal-direction" onclick="closeModalOutside(event,'modal-direction')">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Выберите направление</div>
-    <div class="modal-body">
-      <div class="action-item" style="margin-bottom:10px" onclick="closeModal('modal-direction');openExchangeModal()">
-        <div class="action-icon gold">
-          <svg viewBox="0 0 20 20" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h14M10 3l7 7-7 7"/></svg>
-        </div>
-        <div class="action-text">
-          <div class="action-title">Продать USDT → ₽</div>
-          <div class="action-sub">Курс <span data-rate="sell">—</span> ₽/USDT · Мин. 4 000 ₽</div>
-        </div>
-        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      </div>
-      <div class="action-item" onclick="closeModal('modal-direction');openBuyModal()">
-        <div class="action-icon" style="background:var(--accent2-dim)">
-          <svg viewBox="0 0 20 20" fill="none" stroke="var(--accent2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 10H3M10 3L3 10l7 7"/></svg>
-        </div>
-        <div class="action-text">
-          <div class="action-title">Купить USDT за ₽</div>
-          <div class="action-sub">Курс <span data-rate="buy">—</span> ₽/USDT · Мин. 4 000 ₽</div>
-        </div>
-        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ── BUY MODAL ── -->
-<div class="modal-overlay" id="modal-buy" onclick="closeModalOutside(event,'modal-buy')">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Купить USDT за ₽</div>
-    <div class="modal-body">
-      <div class="info-box" style="margin-bottom:14px">
-        Укажите сумму в рублях — менеджер выдаст реквизиты для оплаты.<br>
-        <strong>Реквизиты придут в течение 5–10 минут.</strong>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Сумма в рублях</label>
-        <input class="form-input" type="number" id="buy-rub" placeholder="Мин. 4 000 ₽" inputmode="decimal" oninput="updateBuyCalc()" style="-moz-appearance:textfield">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Вы получите</label>
-        <div class="amount-display">
-          <span>USDT</span>
-          <span id="buy-usdt-result" style="color:var(--accent2)">—</span>
-        </div>
-      </div>
-      <div id="referral-note-buy" style="display:none;margin:-8px 0 16px;padding:10px 12px;border-radius:12px;background:var(--accent-dim2);border:0.5px solid var(--accent);font-size:12px;line-height:1.5;color:var(--text)"></div>
-      <div class="form-group">
-        <label class="form-label">Ваш USDT кошелёк (TRC-20)</label>
-        <input class="form-input" type="text" id="buy-wallet" placeholder="T..." style="font-family:'JetBrains Mono',monospace;font-size:13px">
-      </div>
-      <button class="modal-submit" id="buy-submit-btn" onclick="submitBuy()" style="background:var(--accent2);color:var(--on-accent)">
-        Купить USDT
-      </button>
-      <div class="modal-note">Курс <span data-rate="buy">—</span> ₽/USDT · Реквизиты в течение 5–10 мин</div>
-    </div>
-  </div>
-</div>
-
 <!-- ── REFERRAL MODAL ── -->
 <div class="modal-overlay" id="modal-referral" onclick="closeModalOutside(event,'modal-referral')">
   <div class="modal">
@@ -1007,6 +855,46 @@
     </div>
   </div>
 </div>
+
+<!-- ── ONBOARDING ── -->
+<div class="onb" id="onb"><div class="onb-inner">
+  <div class="onb-top"><div class="onb-seg"><i class="on"></i><i></i><i></i><i></i><i></i></div><button class="onb-skip" id="onb-skip" onclick="onbGo(4)">Пропустить</button></div>
+  <div class="onb-body">
+    <div class="onb-slide on">
+      <div class="onb-card"><div class="onb-logo"><svg width="46" height="46" viewBox="0 0 48 48"><circle cx="24" cy="24" r="14" fill="#fff"/><circle cx="30" cy="19" r="12" fill="var(--bg3)"/></svg></div>
+        <div class="onb-coins"><span class="xc-coin big">₮</span><i>+</i><span class="xc-coin ton big"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M4.5 7h15L12 19.5z"/><path d="M12 7v12.5"/></svg></span><i>→</i><span class="xc-coin rub big">₽</span></div>
+        <div class="onb-cap">Рубли приходят на вашу карту или по СБП</div></div>
+      <h2>Крипта в рубли на вашу карту</h2><p>Меняйте USDT и TON на рубли. Чек прикладывается к заявке, деньги приходят на ваши реквизиты.</p>
+    </div>
+    <div class="onb-slide">
+      <div class="onb-card" style="padding:16px">
+        <div class="seg" style="width:100%"><button class="on" style="flex:1">USDT</button><button style="flex:1">TON</button></div>
+        <div class="xc-row" style="margin:16px 4px 8px"><span class="xc-label">Вы отдаёте</span><span style="display:flex;align-items:center;gap:8px;font-weight:600"><span class="xc-coin">₮</span>100 USDT</span></div>
+        <div style="text-align:center;color:var(--text3)">↓</div>
+        <div class="xc-bottom" style="margin-top:8px;padding:16px 18px"><div class="xc-label-w" style="font-weight:600">Вы получаете</div><div class="xc-result" style="font-size:38px;margin-top:8px">≈ <span id="onb-demo">—</span> <small>₽</small></div><div class="xc-label-w" style="margin-top:8px;font-size:13px">на карту или СБП</div></div>
+        <div class="onb-cap" style="text-align:left;margin-top:12px">Курс зафиксирован на 10 минут</div></div>
+      <h2>Сумма видна заранее</h2><p>Курс держим 10 минут, комиссия уже в расчёте.</p>
+    </div>
+    <div class="onb-slide">
+      <div class="onb-card onb-list"><div class="onb-li"><span class="onb-n">1</span><div><div class="onb-lt">Сумма</div><div class="onb-ld">Выбираете монету (USDT или TON) и сумму</div></div></div><div class="onb-li"><span class="onb-n">2</span><div><div class="onb-lt">Реквизиты</div><div class="onb-ld">Свои: СБП или карта</div></div></div><div class="onb-li"><span class="onb-n">3</span><div><div class="onb-lt">Чек</div><div class="onb-ld">Прикладываете чек — менеджер отправляет рубли</div></div></div></div>
+      <h2>Три шага</h2><p>Курс фиксируется на 10 минут. Рубли придут после проверки чека менеджером.</p>
+    </div>
+    <div class="onb-slide">
+      <div class="onb-card onb-list"><div class="onb-li"><span class="onb-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.7A8 8 0 1 1 21 12z"/></svg></span><div><div class="onb-lt">Поддержка в Telegram</div><div class="onb-ld">Отвечает по вашей заявке</div></div></div><div class="onb-li"><span class="onb-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l2 2 3-3M4 17l2 2 3-3M12 8h8M12 18h8"/></svg></span><div><div class="onb-lt">Статус заявки</div><div class="onb-ld">Сообщим, когда выплата выполнена</div></div></div><div class="onb-li"><span class="onb-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 12.5 9 5 9-5"/></svg></span><div><div class="onb-lt">История сделок</div><div class="onb-ld">Все ваши заявки в одном месте</div></div></div></div>
+      <h2>Менеджер рядом</h2><p>Если что-то пошло не так — напишите в поддержку, мы на связи.</p>
+    </div>
+    <div class="onb-slide">
+      <h2 style="margin-top:6px">Выберите тему</h2><p style="margin-bottom:14px">Её можно сменить позже в профиле.</p>
+      <div class="theme-row"><button id="th-dark" class="on" onclick="setTheme(false)">🌙 Тёмная</button><button id="th-light" onclick="setTheme(true)">☀️ Светлая</button></div>
+      <div class="onb-card" style="margin-top:14px;padding:14px 16px">
+        <label class="onb-check"><input type="checkbox" id="oc-terms" onchange="onbValidate()"><span>Принимаю условия обмена</span></label><a class="onb-link" onclick="openDoc('terms_url')">Прочитать: Условия обмена</a>
+        <label class="onb-check"><input type="checkbox" id="oc-priv" onchange="onbValidate()"><span>Ознакомлен с политикой конфиденциальности</span></label><a class="onb-link" onclick="openDoc('privacy_url')">Прочитать: Конфиденциальность</a>
+        <label class="onb-check"><input type="checkbox" id="oc-pd" onchange="onbValidate()"><span>Даю согласие на обработку персональных данных</span></label><a class="onb-link" onclick="openDoc('pd_url')">Прочитать: Обработка персональных данных</a>
+      </div>
+    </div>
+  </div>
+  <div class="onb-foot"><button class="btn-ghost" id="onb-back" onclick="onbGo(onbIdx-1)" style="visibility:hidden">←</button><button class="cta-btn" id="onb-next" onclick="onbNext()"><span id="onb-next-label">Продолжить</span> <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+</div></div>
 
 <!-- Toast -->
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
@@ -1076,134 +964,75 @@
 
       // Wallet balance
       currentBalance = me.balance;
-      document.getElementById('wallet-balance').innerHTML =
-        `${me.balance.toFixed(2)} <span>USDT</span>`;
+      document.getElementById('profile-balance-row').style.display = me.balance > 0 ? 'flex' : 'none';
 
       // Home stat
-      document.getElementById('stat-deals').textContent = me.stats.done_orders;
 
       // Персональный курс, если пользователя пригласили по реф-ссылке
       applyReferralPricing(me.referral);
+      checkOnboarding(me);
     } catch (e) {
+      $('onb').style.display = 'none';
       console.warn('Could not load user from server:', e.message);
     }
   }
 
-  // ── Load orders ─────────────────────────────────────────────────────────────
+  // ── Orders history with filters ────────────────────────────────────────────
+  let ordersCache = [];
+  const STATUS_MAP = { pending: ['В обработке', 'pending'], done: ['Выполнено', 'done'], cancelled: ['Отменено', 'cancelled'] };
+  const TYPE_MAP = { exchange: 'Продажа USDT → ₽', buy: 'Покупка USDT', deposit: 'Пополнение', withdrawal: 'Вывод USDT' };
   async function loadOrders() {
-    try {
-      const orders = await api('GET', '/api/orders');
-      const list = document.getElementById('orders-list');
-
-      if (!orders.length) {
-        list.innerHTML = `<div class="history-empty">
-          <svg viewBox="0 0 48 48" fill="none"><rect x="8" y="6" width="32" height="36" rx="4" stroke="currentColor" stroke-width="2"/><path d="M16 18h16M16 24h10M16 30h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <p>Сделок пока нет</p><span>Ваши операции появятся здесь</span>
-        </div>`;
-        return;
-      }
-
-      list.innerHTML = orders.map(o => {
-        // PostgreSQL returns numerics as strings — cast them
-        const usdt = Number(o.usdt) || 0;
-        const rub  = Number(o.rub)  || 0;
-
-        const statusMap = { pending: 'В обработке', processing: 'Обрабатывается', done: 'Выполнено', cancelled: 'Отменено' };
-        const typeMap   = { exchange: 'Продажа USDT → ₽', deposit: 'Пополнение', withdrawal: 'Вывод USDT', buy: 'Покупка ₽ → USDT' };
-        const typeLabel = typeMap[o.type] || o.type;
-
-        const iconPath = o.type === 'exchange'
-          ? '<path d="M3 9h12M9 3l6 6-6 6"/>'
-          : o.type === 'withdrawal'
-            ? '<path d="M9 15V3M3 9l6-6 6 6"/>'
-            : o.type === 'buy'
-              ? '<path d="M15 9H3M9 3L3 9l6 6"/>'
-              : '<path d="M9 3v12M3 9l6 6 6-6"/>';
-
-        const amountDisplay = o.type === 'buy'
-          ? `<div class="order-usdt" style="color:var(--accent2)">${Number(o.rub) > 0 ? Math.round(Number(o.rub)).toLocaleString('ru-RU') + ' ₽' : '—'}</div>
-             ${Number(o.usdt) > 0 ? `<div class="order-rub">${Number(o.usdt).toFixed(2)} USDT</div>` : ''}`
-          : `<div class="order-usdt">${usdt > 0 ? usdt.toFixed(2) + ' USDT' : '—'}</div>
-             ${rub > 0 ? `<div class="order-rub">${Math.round(rub).toLocaleString('ru-RU')} ₽</div>` : ''}`;
-
-        return `<div class="order-item">
-          <div class="order-icon">
-            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              ${iconPath}
-            </svg>
-          </div>
-          <div class="order-info">
-            <div class="order-title">${typeLabel}</div>
-            <div class="order-date">${formatDate(o.created_at)}</div>
-          </div>
-          <div class="order-amount sensitive">
-            ${amountDisplay}
-            <div class="order-status ${o.status}">${statusMap[o.status] || o.status}</div>
-          </div>
-        </div>`;
-      }).join('');
-    } catch (e) {
-      console.warn('Could not load orders:', e.message);
-      document.getElementById('orders-list').innerHTML = `<div class="history-empty"><p>Ошибка загрузки</p><span>${e.message}</span></div>`;
+    try { ordersCache = await api('GET', '/api/orders'); renderOrders(); }
+    catch (e) { document.getElementById('orders-list').innerHTML = '<div class="empty-wrap"><div class="empty-title">Не удалось загрузить</div></div>'; }
+  }
+  function renderOrders() {
+    const val = id => document.getElementById(id).value;
+    const norm = x => String(x ?? '').toLowerCase().replace(/\s+/g, '');
+    const q = norm(val('f-q')).replace(/^#/, ''), st = val('f-status'), ty = val('f-type');
+    const from = val('f-from') ? new Date(val('f-from') + 'T00:00:00') : null, to = val('f-to') ? new Date(val('f-to') + 'T23:59:59') : null;
+    const list = ordersCache.filter(o => {
+      if (st && o.status !== st) return false;
+      if (ty && o.type !== ty) return false;
+      const d = new Date(o.created_at);
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      if (q && ![o.id, o.requisites, Number(o.usdt) || '', Math.round(Number(o.rub)) || ''].map(norm).join('|').includes(q)) return false;
+      return true;
+    });
+    const box = document.getElementById('orders-list');
+    if (!list.length) {
+      const filtered = q || st || ty || from || to;
+      box.innerHTML = `<div class="empty-wrap"><div class="empty-arrow"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></div>
+        <div class="empty-title">${ordersCache.length && filtered ? 'Заявок не найдено' : 'Сделок пока нет'}</div>
+        <div class="empty-sub">${ordersCache.length && filtered ? 'Измените фильтры или создайте новый обмен.' : 'Ваши операции появятся здесь.'}</div>
+        <button class="pill-btn" onclick="goExchange()">Начать обмен</button></div>`;
+      return;
     }
+    box.innerHTML = list.map(o => {
+      const [stLabel, stClass] = STATUS_MAP[o.status] || [o.status, 'pending'];
+      const amount = o.type === 'buy' ? `+${Number(o.usdt).toFixed(2)} USDT` : o.type === 'exchange' ? `${Math.round(Number(o.rub)).toLocaleString('ru-RU')} ₽` : `${Number(o.usdt).toFixed(2)} USDT`;
+      const dt = new Date(o.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      return `<div class="order-item"><div><div class="order-type">${o.type === 'exchange' && o.asset === 'TON' ? 'Продажа TON → ₽' : (TYPE_MAP[o.type] || 'Заявка')}</div><div class="order-date">№${o.id} · ${dt}</div></div>
+        <div style="text-align:right"><div class="order-amount sensitive">${amount}</div><div class="order-status ${stClass}">${stLabel}</div></div></div>`;
+    }).join('');
   }
 
-  let BASE_RATE_SELL = 0, BASE_RATE_BUY = 0, RATE_SELL = 0, RATE_BUY = 0, RATE = 0;
-  const MIN_RUB_SELL = 4000, MIN_RUB_BUY = 4000, MIN_RUB = MIN_RUB_SELL;
-  let calcDirection = 'sell'; // 'sell' | 'buy'
-  let myReferral = null;
-  let quote = null, quoteLeft = 0, quoteLoading = false;
-
-  // Курс фиксируется сервером на 10 минут; по истечении запрашиваем новый
-  async function loadQuote(silent) {
-    if (quoteLoading) return;
-    quoteLoading = true;
-    try {
-      const q = await api('GET', '/api/quote');
-      const changed = quote && (q.sell_rate !== quote.sell_rate || q.buy_rate !== quote.buy_rate);
-      quote = q; quoteLeft = q.seconds_left;
-      BASE_RATE_SELL = q.base_sell; BASE_RATE_BUY = q.base_buy;
-      RATE_SELL = q.sell_rate; RATE_BUY = q.buy_rate; RATE = RATE_SELL;
-      renderRates();
-      if (changed && !silent) showToast('Курс обновлён', 'info');
-    } catch (e) {
-      console.warn('Quote error:', e.message);
-      const t = document.getElementById('rate-timer'); if (t) t.textContent = 'нет связи';
-    } finally { quoteLoading = false; }
-  }
-
-  function tickQuote() {
-    if (!quote) return;
-    quoteLeft -= 1;
-    if (quoteLeft <= 0) { loadQuote(false); return; }
-    const t = document.getElementById('rate-timer');
-    if (t) t.textContent = Math.floor(quoteLeft / 60) + ':' + String(quoteLeft % 60).padStart(2, '0');
-  }
-
-  function applyReferralPricing(referral) { myReferral = referral || null; renderRates(); }
-
-  function renderRates() {
-    if (!RATE_SELL) return;
-    document.getElementById('hero-rate-sell').textContent = RATE_SELL.toFixed(2);
-    document.getElementById('hero-rate-buy').textContent = RATE_BUY.toFixed(2);
-    document.querySelectorAll('[data-rate="sell"]').forEach(e => e.textContent = RATE_SELL.toFixed(2));
-    document.querySelectorAll('[data-rate="buy"]').forEach(e => e.textContent = RATE_BUY.toFixed(2));
-    document.getElementById('ex-usdt').placeholder = 'Мин. ~' + Math.ceil(MIN_RUB_SELL / RATE_SELL) + ' USDT';
-    const heroNote = document.getElementById('referral-note');
-    if (myReferral) {
-      const label = myReferral.delta_type === 'percent' ? `${myReferral.delta}%` : `${myReferral.delta} ₽`;
-      heroNote.innerHTML = `👤 Пользователь <strong>${myReferral.referrer_name}</strong> установил для вас комиссию: <strong>${label}</strong> к курсу`;
-      heroNote.style.display = 'block';
-    } else { heroNote.style.display = 'none'; }
-    calcUpdate(); updateExchangeCalc(); updateBuyCalc();
-    document.getElementById('calc-hint').textContent =
-      `Мин. сумма: 4 000 ₽ · Курс: ${(calcDirection === 'sell' ? RATE_SELL : RATE_BUY).toFixed(2)} ₽/USDT`;
-  }
-
-  async function handleQuoteError(e) {
-    if (e.code === 'QUOTE_EXPIRED') await loadQuote(true);
-    showToast(e.message, 'error');
-  }
+  // ── State ───────────────────────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+  let RATE_SELL = 0, BASE_RATE_SELL = 0, TON_USDT = 0;
+  const MIN_RUB = 4000;
+  let HC_DISCOUNT = 0.01, HC_MIN_RUB = 5000, highCheck = false;
+  let myReferral = null, quote = null, quoteLeft = 0, quoteLoading = false;
+  let asset = 'USDT', homeAsset = 'USDT', appStatus = { open: true, operators: 1 }, cfg = {}, onbIdx = 0;
+  const CHECK_RE = /^https?:\/\/(?:www\.)?(?:t|telegram)\.me\/(?:xrocket|tonrocketbot|cryptobot|send)(?:[/?]|$)/i;
+  const QUICK = { USDT: [100, 250, 500, 1000], TON: [50, 100, 250, 500] };
+  const TON_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M4.5 7h15L12 19.5z"/><path d="M12 7v12.5"/></svg>';
+  const fmtMoney = v => v.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const bigAmount = (v, unit) => { const [i, d] = fmtMoney(v).split(','); return `${i}<small>,${d}</small> ${unit}`; };
+  const fitResult = el => { const n = el.textContent.length; el.style.fontSize = n > 13 ? '34px' : n > 10 ? '42px' : '52px'; };
+  const unitRate = a => a === 'TON' ? (TON_USDT && RATE_SELL ? Math.round(TON_USDT * RATE_SELL * 100) / 100 : 0) : RATE_SELL;
+  const finalRate = a => { const r = unitRate(a); return highCheck ? Math.round(r * (1 - HC_DISCOUNT) * 100) / 100 : r; };
+  const minRub = () => highCheck ? Math.max(MIN_RUB, HC_MIN_RUB) : MIN_RUB;
 
   function refNoteText(amountRub) {
     if (!myReferral) return '';
@@ -1212,71 +1041,169 @@
       (amountRub ? ` — это ${Math.round(amountRub).toLocaleString('ru-RU')} ₽ с этой сделки` : '');
   }
 
-  function setDirection(dir) {
-    calcDirection = dir;
-    const sellBtn = document.getElementById('dir-sell');
-    const buyBtn  = document.getElementById('dir-buy');
-    sellBtn.className = 'dir-btn' + (dir === 'sell' ? ' active sell' : '');
-    buyBtn.className  = 'dir-btn' + (dir === 'buy'  ? ' active buy'  : '');
+  // ── Rates / quote (фиксируется сервером на 10 минут) ────────────────────────
+  async function loadQuote(silent) {
+    if (quoteLoading) return; quoteLoading = true;
+    try {
+      const q = await api('GET', '/api/quote');
+      const changed = quote && (q.sell_rate !== quote.sell_rate || q.ton_usdt !== quote.ton_usdt);
+      quote = q; quoteLeft = q.seconds_left;
+      BASE_RATE_SELL = q.base_sell; RATE_SELL = q.sell_rate; TON_USDT = q.ton_usdt || 0;
+      HC_DISCOUNT = q.hc_discount ?? HC_DISCOUNT; HC_MIN_RUB = q.hc_min_rub ?? HC_MIN_RUB;
+      renderRates();
+      if (changed && !silent) showToast('Курс обновлён', 'info');
+    } catch (e) { console.warn('Quote error:', e.message); }
+    finally { quoteLoading = false; }
+  }
+  function tickQuote() {
+    if (!quote) return;
+    quoteLeft -= 1;
+    if (quoteLeft <= 0) { loadQuote(false); return; }
+    renderTimer();
+  }
+  function renderTimer() {
+    const t = $('xt-left'); if (!t) return;
+    t.textContent = Math.floor(quoteLeft / 60) + ':' + String(Math.max(0, quoteLeft) % 60).padStart(2, '0');
+    $('xt-ring').style.strokeDashoffset = String(100 - Math.max(0, Math.min(100, quoteLeft / 6)));
+  }
+  function applyReferralPricing(referral) { myReferral = referral || null; renderRates(); }
 
-    if (dir === 'sell') {
-      document.getElementById('input-currency').textContent  = 'USDT';
-      document.getElementById('output-currency').textContent = '₽ RUB';
-      document.getElementById('calc-hint').textContent = `Мин. сумма: 4 000 ₽ · Курс: ${RATE_SELL.toFixed(2)} ₽/USDT`;
-      document.getElementById('cta-label').textContent = 'Продать USDT';
-      document.getElementById('exchange-btn').style.background = 'var(--accent)';
-      document.getElementById('main-input').placeholder = '0.00';
-    } else {
-      document.getElementById('input-currency').textContent  = '₽ RUB';
-      document.getElementById('output-currency').textContent = 'USDT';
-      document.getElementById('calc-hint').textContent = `Мин. сумма: 4 000 ₽ · Курс: ${RATE_BUY.toFixed(2)} ₽/USDT`;
-      document.getElementById('cta-label').textContent = 'Купить USDT';
-      document.getElementById('exchange-btn').style.background = 'var(--accent2)';
-      document.getElementById('main-input').placeholder = '0.00';
-    }
-    document.getElementById('main-input').value = '';
-    document.getElementById('main-result').textContent = '—';
-    document.getElementById('calc-warning').classList.remove('show');
-    document.getElementById('exchange-btn').disabled = false;
+  function renderRates() {
+    const r = unitRate(homeAsset);
+    $('rc-label').textContent = 'К выплате за 1 ' + homeAsset;
+    $('rc-rate').innerHTML = r ? fmtMoney(r) + '<span>₽</span>' : '—';
+    $('rc-upd').textContent = !quote ? '—' : (homeAsset === 'TON' && !TON_USDT) ? 'Курс TON временно недоступен'
+      : 'Обновлён в ' + new Date(quote.updated_at).toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit' }) + ' МСК';
+    $('hc-sub').textContent = `курс ниже на ${+(HC_DISCOUNT * 100).toFixed(2)} %, выплата от ${HC_MIN_RUB.toLocaleString('ru-RU')} ₽, заявка в приоритете у операторов`;
+    $('onb-demo').textContent = RATE_SELL ? fmtMoney(100 * RATE_SELL) : '—';
+    const note = $('referral-note');
+    if (myReferral) { note.innerHTML = refNoteText(); note.style.display = 'block'; } else note.style.display = 'none';
+    xRecalc();
+  }
+  function setHomeAsset(a) { homeAsset = a; $('hs-USDT').classList.toggle('on', a === 'USDT'); $('hs-TON').classList.toggle('on', a === 'TON'); renderRates(); haptic(); }
+
+  async function handleApiError(e) {
+    if (e.code === 'QUOTE_EXPIRED') await loadQuote(true);
+    if (e.code === 'NOT_AGREED') showOnboarding(4);
+    if (e.code === 'CLOSED') await loadStatus();
+    showToast(e.message, 'error');
   }
 
-  function calcUpdate() {
-    const val = parseFloat(document.getElementById('main-input').value);
-    const warning = document.getElementById('calc-warning');
-    const result  = document.getElementById('main-result');
-    const btn     = document.getElementById('exchange-btn');
+  // ── Status / config ─────────────────────────────────────────────────────────
+  async function loadStatus() {
+    try { const st = await api('GET', '/api/status'); appStatus = { open: !!st.open, operators: st.operators }; cfg = st; renderStatus(); }
+    catch (e) { console.warn('Status error:', e.message); }
+  }
+  function renderStatus() {
+    const open = appStatus.open;
+    $('st-icon').innerHTML = open ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 3 3 5-6"/></svg>'
+      : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>';
+    $('st-title').textContent = open ? 'Приём заявок открыт' : 'Приём заявок закрыт';
+    $('st-sub').textContent = open ? 'Можно обменивать сейчас.' : 'Заявки временно не принимаются.';
+    $('st-ops').textContent = open ? 'Операторов на смене: ' + appStatus.operators : 'Следите за новостями в канале';
+    $('status-card').classList.toggle('closed', !open);
+    $('rc-btn').disabled = !open; $('rc-btn-label').textContent = open ? 'Обменять на рубли' : 'Приём заявок закрыт';
+    if (cfg.channel_url) { $('chan-card').style.display = 'flex'; $('chan-title').textContent = cfg.channel_title; $('chan-desc').textContent = cfg.channel_desc; }
+    xRecalc();
+  }
+  function openLink(u) {
+    if (!u) return;
+    if (tg && /^https:\/\/t\.me\//i.test(u) && tg.openTelegramLink) tg.openTelegramLink(u);
+    else if (tg && tg.openLink) tg.openLink(u); else window.open(u, '_blank');
+  }
+  function openChannel() { openLink(cfg.channel_url); }
+  function openDoc(key) { if (!cfg[key]) { showToast('Документ загружается, попробуйте ещё раз', 'info'); return; } openLink(cfg[key]); }
 
-    if (!val || val <= 0 || !RATE_SELL) {
-      result.textContent = '—'; warning.classList.remove('show'); btn.disabled = false; return;
-    }
+  // ── Exchange page ───────────────────────────────────────────────────────────
+  function goExchange() { openExchange(); }
+  function openExchange(a) { if (a) setAsset(a); switchPage('exchange'); xGo(1); if (quote && quoteLeft < 30) loadQuote(true); }
+  function toggleAssetMenu() { const m = $('x-menu'); m.style.display = m.style.display === 'block' ? 'none' : 'block'; }
+  function pickAsset(a) { $('x-menu').style.display = 'none'; setAsset(a); }
+  function setAsset(a) {
+    asset = a;
+    const c = $('x-coin'); c.className = 'xc-coin' + (a === 'TON' ? ' ton' : ''); c.innerHTML = a === 'TON' ? TON_SVG : '₮';
+    $('x-asset').textContent = a;
+    $('x-quick').innerHTML = QUICK[a].map(v => `<button class="q-chip" data-v="${v}" onclick="$('x-amount').value=${v};xRecalc()">${v}</button>`).join('');
+    $('x-amount').value = '';
+    xRecalc();
+  }
+  function toggleHighCheck(on) { highCheck = !!on; xRecalc(); }
 
-    if (calcDirection === 'sell') {
-      const rub = val * RATE_SELL;
-      if (rub < MIN_RUB_SELL) {
-        result.textContent = '—';
-        warning.textContent = `Минимальная сумма — 4 000 ₽ (~${(MIN_RUB_SELL/RATE_SELL).toFixed(0)} USDT)`;
-        warning.classList.add('show'); btn.disabled = true; return;
-      }
-      result.textContent = Math.round(rub).toLocaleString('ru-RU');
-    } else {
-      if (val < MIN_RUB_BUY) {
-        result.textContent = '—';
-        warning.textContent = 'Минимальная сумма — 4 000 ₽';
-        warning.classList.add('show'); btn.disabled = true; return;
-      }
-      result.textContent = (val / RATE_BUY).toFixed(2);
-    }
-    warning.classList.remove('show');
-    btn.disabled = false;
+  function xRecalc() {
+    const val = parseFloat($('x-amount').value), rate = finalRate(asset), min = minRub();
+    $('x-rate').textContent = rate ? 'Курс ' + fmtMoney(rate) : 'Курс —';
+    $('x-hint').textContent = rate ? `От ${Math.ceil(min / rate)} ${asset}` : (asset === 'TON' ? 'Курс TON временно недоступен' : '—');
+    const res = $('x-result'), warn = $('x-warn'); warn.classList.remove('show');
+    let ok = false;
+    if (val > 0 && rate) {
+      if (val * rate < min) { res.innerHTML = '—'; warn.textContent = `Минимальная сумма — ${min.toLocaleString('ru-RU')} ₽ (~${Math.ceil(min / rate)} ${asset})`; warn.classList.add('show'); }
+      else { res.innerHTML = bigAmount(val * rate, '₽'); ok = true; }
+    } else res.innerHTML = '—';
+    fitResult(res);
+    document.querySelectorAll('.q-chip').forEach(c => c.classList.toggle('on', parseFloat(c.dataset.v) === val));
+    $('x-next1').disabled = !ok || !appStatus.open;
+    $('x-closed').style.display = appStatus.open ? 'none' : 'block';
+    renderTimer();
+  }
+  function xGo(n) {
+    [1, 2, 3].forEach(i => { $('xs-' + i).style.display = i === n ? 'block' : 'none'; $('chip-' + i).className = 'chip' + (i === n ? ' on' : i < n ? ' done' : ''); });
+    if (n === 3) renderSummary();
+    window.scrollTo(0, 0);
+  }
+  function xNext2() {
+    if ($('x-req').value.trim().length < 5) { showToast('Укажите реквизиты', 'error'); return; }
+    if (!$('x-bank').value.trim()) { showToast('Укажите банк', 'error'); return; }
+    xGo(3);
+  }
+  function renderSummary() {
+    const amount = parseFloat($('x-amount').value) || 0, rate = finalRate(asset);
+    const row = (k, v) => `<div class="sum-row"><span>${k}</span><b>${v}</b></div>`;
+    $('x-sum').innerHTML = row('Отдаёте', `${amount} ${asset}`) + row('Получаете', Math.round(amount * rate).toLocaleString('ru-RU') + ' ₽') +
+      row('Курс', fmtMoney(rate) + (highCheck ? ' · High-check' : '')) + row('Реквизиты', `${$('x-req').value.trim()} · ${$('x-bank').value.trim()}`);
+  }
+  async function submitExchange() {
+    const amount = parseFloat($('x-amount').value), checkUrl = $('x-check').value.trim(), rate = finalRate(asset);
+    const requisites = $('x-req').value.trim(), bank = $('x-bank').value.trim();
+    if (!amount || !rate || amount * rate < minRub()) { showToast('Проверьте сумму', 'error'); xGo(1); return; }
+    if (requisites.length < 5 || !bank) { showToast('Укажите реквизиты и банк', 'error'); xGo(2); return; }
+    if (!CHECK_RE.test(checkUrl)) { showToast('Вставьте ссылку на чек xRocket или Crypto Bot', 'error'); return; }
+    const btn = $('x-submit'); btn.disabled = true; btn.textContent = 'Отправка…';
+    try {
+      await api('POST', '/api/exchange', { asset, amount, requisites: `${requisites} | ${bank}`, check_url: checkUrl, quote_id: quote && quote.id, high_check: highCheck });
+      ['x-amount', 'x-req', 'x-bank', 'x-check'].forEach(id => $(id).value = '');
+      highCheck = false; $('hc-toggle').checked = false; xRecalc();
+      showToast('✅ Заявка отправлена! Менеджер проверит чек', 'success');
+      switchPage('deals');
+    } catch (e) { await handleApiError(e); }
+    finally { btn.disabled = false; btn.textContent = 'Отправить заявку'; }
   }
 
-  function handleCalcAction() {
-    if (calcDirection === 'sell') {
-      openExchangeModal();
-    } else {
-      openBuyModal();
-    }
+  // ── Onboarding ──────────────────────────────────────────────────────────────
+  function showOnboarding(i) { $('onb').style.display = 'flex'; $('onb').classList.add('ready'); onbGo(i || 0); }
+  function onbGo(i) {
+    onbIdx = Math.max(0, Math.min(4, i));
+    document.querySelectorAll('.onb-slide').forEach((el, k) => el.classList.toggle('on', k === onbIdx));
+    document.querySelectorAll('.onb-seg i').forEach((el, k) => el.classList.toggle('on', k <= onbIdx));
+    $('onb-back').style.visibility = onbIdx ? 'visible' : 'hidden';
+    $('onb-skip').style.visibility = onbIdx < 4 ? 'visible' : 'hidden';
+    $('onb-next-label').textContent = onbIdx === 4 ? 'Начать' : 'Продолжить';
+    $('th-dark').classList.toggle('on', !settings.light); $('th-light').classList.toggle('on', settings.light);
+    onbValidate();
   }
+  function onbValidate() { $('onb-next').disabled = onbIdx === 4 && !['oc-terms', 'oc-priv', 'oc-pd'].every(id => $(id).checked); }
+  async function onbNext() {
+    if (onbIdx < 4) { onbGo(onbIdx + 1); return; }
+    $('onb-next').disabled = true;
+    try { await api('POST', '/api/agree', { terms: true, privacy: true, pd: true }); $('onb').style.display = 'none'; window.scrollTo(0, 0); }
+    catch (e) { showToast(e.message, 'error'); onbValidate(); }
+  }
+  function setTheme(light) {
+    settings.light = light; try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+    applySettings();
+    const cb = document.querySelector('[data-setting="light"]'); if (cb) cb.checked = light;
+    $('th-dark').classList.toggle('on', !light); $('th-light').classList.toggle('on', light);
+  }
+  function checkOnboarding(me) { if (me.agreed) $('onb').style.display = 'none'; else showOnboarding(0); }
 
   // ── Page navigation ─────────────────────────────────────────────────────────
   function switchPage(page) {
@@ -1288,77 +1215,10 @@
     window.scrollTo(0, 0);
     if (page === 'deals') loadOrders();
     if (page === 'profile') loadUser();
+    if (page === 'home') loadStatus();
   }
 
   // ── Modals ──────────────────────────────────────────────────────────────────
-  function openExchangeModal() {
-    if (quote && quoteLeft < 30) loadQuote(true);
-    const val = document.getElementById('main-input') ? document.getElementById('main-input').value : '';
-    if (calcDirection === 'sell' && val && parseFloat(val) * RATE_SELL >= MIN_RUB_SELL) {
-      document.getElementById('ex-usdt').value = val;
-      updateExchangeCalc();
-    }
-    document.getElementById('ex-balance-display').textContent =
-      (currentBalance !== null ? currentBalance.toFixed(2) : '—') + ' USDT';
-    openModal('modal-exchange');
-  }
-
-  function openDirectionPicker() {
-    openModal('modal-direction');
-  }
-
-  function openBuyModal() {
-    if (quote && quoteLeft < 30) loadQuote(true);
-    const val = document.getElementById('main-input') ? document.getElementById('main-input').value : '';
-    if (calcDirection === 'buy' && val && parseFloat(val) >= MIN_RUB_BUY) {
-      document.getElementById('buy-rub').value = val;
-      updateBuyCalc();
-    }
-    openModal('modal-buy');
-  }
-
-  function updateBuyCalc() {
-    const rub = parseFloat(document.getElementById('buy-rub').value);
-    const out = document.getElementById('buy-usdt-result');
-    const note = document.getElementById('referral-note-buy');
-    if (!rub || rub < MIN_RUB_BUY || !RATE_BUY) { out.textContent = '—'; note.style.display = 'none'; return; }
-    out.textContent = (rub / RATE_BUY).toFixed(2) + ' USDT';
-    if (myReferral) {
-      const usdt = rub / RATE_BUY;
-      const commission = usdt * (RATE_BUY - BASE_RATE_BUY);
-      note.innerHTML = refNoteText(commission);
-      note.style.display = 'block';
-    } else {
-      note.style.display = 'none';
-    }
-  }
-
-  async function submitBuy() {
-    const rub = parseFloat(document.getElementById('buy-rub').value);
-    const wallet = document.getElementById('buy-wallet').value.trim();
-    if (!rub || rub < MIN_RUB_BUY) { showToast('Минимум 4 000 ₽', 'error'); return; }
-    if (!wallet || wallet.length < 10) { showToast('Укажите USDT кошелёк (TRC-20)', 'error'); return; }
-    const btn = document.getElementById('buy-submit-btn');
-    btn.disabled = true; btn.textContent = 'Отправка...';
-    try {
-      await api('POST', '/api/buy', { rub, wallet, quote_id: quote && quote.id });
-      closeModal('modal-buy');
-      showToast('Заявка создана! Реквизиты придут в течение 5–10 мин', 'success');
-      document.getElementById('buy-rub').value = '';
-      document.getElementById('buy-wallet').value = '';
-      document.getElementById('buy-usdt-result').textContent = '—';
-      if (document.getElementById('main-input')) {
-        document.getElementById('main-input').value = '';
-        document.getElementById('main-result').textContent = '—';
-      }
-    } catch(e) { await handleQuoteError(e); }
-    finally { btn.disabled = false; btn.textContent = 'Купить USDT'; }
-  }
-
-  function openDepositModal() {
-    openModal('modal-deposit');
-  }
-
   function openModal(id) {
     document.getElementById(id).classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -1371,72 +1231,6 @@
 
   function closeModalOutside(e, id) {
     if (e.target === document.getElementById(id)) closeModal(id);
-  }
-
-  function updateExchangeCalc() {
-    const usdt = parseFloat(document.getElementById('ex-usdt').value);
-    const rubEl = document.getElementById('ex-rub');
-    const note = document.getElementById('referral-note-ex');
-    if (!usdt || !RATE || usdt * RATE < MIN_RUB) { rubEl.textContent = '—'; note.style.display = 'none'; return; }
-    rubEl.textContent = Math.round(usdt * RATE).toLocaleString('ru-RU') + ' ₽';
-    if (myReferral) {
-      const commission = usdt * (BASE_RATE_SELL - RATE_SELL);
-      note.innerHTML = refNoteText(commission);
-      note.style.display = 'block';
-    } else {
-      note.style.display = 'none';
-    }
-  }
-
-  // ── Submit exchange ─────────────────────────────────────────────────────────
-  async function submitExchange() {
-    const usdt = parseFloat(document.getElementById('ex-usdt').value);
-    const requisites = document.getElementById('ex-requisites').value.trim();
-    const bank = document.getElementById('ex-bank').value.trim();
-
-    if (!usdt || usdt * RATE < MIN_RUB) { showToast('Минимум 4 000 ₽ (~' + Math.ceil(MIN_RUB / RATE) + ' USDT)', 'error'); return; }
-    if (!requisites || requisites.length < 5) { showToast('Укажите реквизиты для получения ₽', 'error'); return; }
-    if (!bank) { showToast('Укажите банк', 'error'); return; }
-
-    // Client-side balance check
-    if (currentBalance !== null && usdt > currentBalance) {
-      closeModal('modal-exchange');
-      showToast(`Недостаточно средств. Баланс: ${currentBalance.toFixed(2)} USDT`, 'error');
-      setTimeout(() => openDepositModal(), 1200);
-      return;
-    }
-
-    const btn = document.getElementById('ex-submit-btn');
-    btn.disabled = true;
-    btn.textContent = 'Отправка...';
-
-    try {
-      const result = await api('POST', '/api/exchange', { usdt, requisites: `${requisites} | ${bank}`, quote_id: quote && quote.id });
-      currentBalance = result.balance ?? (currentBalance - usdt);
-      document.getElementById('wallet-balance').innerHTML =
-        `${currentBalance.toFixed(2)} <span>USDT</span>`;
-      document.getElementById('ex-balance-display').textContent = currentBalance.toFixed(2) + ' USDT';
-      closeModal('modal-exchange');
-      showToast('Заявка создана! Ожидайте выплаты', 'success');
-      document.getElementById('ex-usdt').value = '';
-      document.getElementById('ex-requisites').value = '';
-      document.getElementById('ex-bank').value = '';
-      document.getElementById('ex-rub').textContent = '—';
-      document.getElementById('usdt-input') && (document.getElementById('usdt-input').value = '');
-      document.getElementById('rub-result') && (document.getElementById('rub-result').textContent = '—');
-    } catch (e) {
-      if (e.code === 'QUOTE_EXPIRED') { await handleQuoteError(e); return; }
-      if (e.message.includes('Недостаточно') || e.message.includes('баланс')) {
-        closeModal('modal-exchange');
-        showToast(e.message, 'error');
-        setTimeout(() => openDepositModal(), 1200);
-      } else {
-        showToast(e.message, 'error');
-      }
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Создать заявку';
-    }
   }
 
   // ── Deposit tabs ────────────────────────────────────────────────────────────
@@ -1623,7 +1417,7 @@
     try {
       const result = await api('POST', '/api/withdrawal', { usdt });
       currentBalance = result.balance ?? (currentBalance - usdt);
-      document.getElementById('wallet-balance').innerHTML = `${currentBalance.toFixed(2)} <span>USDT</span>`;
+      document.getElementById('profile-balance').textContent = currentBalance.toFixed(2) + ' USDT'; document.getElementById('profile-balance-row').style.display = currentBalance > 0 ? 'flex' : 'none';
       closeModal('modal-withdrawal');
       showToast('Заявка отправлена! Ожидайте чек в Telegram', 'success');
     } catch(e) {
@@ -1765,7 +1559,7 @@
     }
   }
   function initSettings() {
-    ['wallet-balance', 'profile-balance', 'profile-volume'].forEach(id => {
+    ['profile-balance', 'profile-volume'].forEach(id => {
       const el = document.getElementById(id); if (el) el.classList.add('sensitive');
     });
     document.querySelectorAll('[data-setting]').forEach(el => {
@@ -1781,8 +1575,9 @@
   }
 
   // ── Init ────────────────────────────────────────────────────────────────────
-  loadUser();
   initSettings();
+  loadUser();
+  loadStatus();
   loadQuote(true);
   setInterval(tickQuote, 1000);
 
