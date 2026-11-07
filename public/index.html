@@ -4,27 +4,45 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Eclipse Exchange</title>
+<script>try{if(JSON.parse(localStorage.getItem('ee_settings')||'{}').light)document.documentElement.dataset.theme='light'}catch(e){}</script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0a;
-    --bg2: #111111;
-    --bg3: #181818;
-    --bg4: #202020;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.13);
-    --gold: #D4A843;
-    --gold-dim: rgba(212,168,67,0.12);
-    --gold-dim2: rgba(212,168,67,0.22);
-    --text: #F0EDE8;
-    --text2: #9A9590;
-    --text3: #5A5650;
-    --green: #3DD68C;
-    --green-dim: rgba(61,214,140,0.12);
-    --red: #FF5555;
+    --bg:#05070D; --bg2:#0B0F1A; --bg3:#111726; --bg4:#182033;
+    --border:rgba(160,175,255,0.08); --border2:rgba(160,175,255,0.15);
+    --accent:#8B8CFF; --accent-rgb:139,140,255; --accent-dim:rgba(139,140,255,0.12); --accent-dim2:rgba(139,140,255,0.22);
+    --accent2:#22D3EE; --accent2-rgb:34,211,238; --accent2-dim:rgba(34,211,238,0.12);
+    --text:#EAF0FF; --text2:#97A0B8; --text3:#5F6A86; --red:#FF5C6C; --pending:#F5B83D;
+    --on-accent:#06080F; --nav-bg:rgba(5,7,13,0.82); --grid:rgba(160,175,255,0.02);
+    color-scheme: dark;
   }
+  :root[data-theme="light"] {
+    --bg:#F3F5FB; --bg2:#FFFFFF; --bg3:#EEF1F9; --bg4:#E3E8F4;
+    --border:rgba(20,30,70,0.08); --border2:rgba(20,30,70,0.15);
+    --accent:#5B5BD6; --accent-rgb:91,91,214; --accent-dim:rgba(91,91,214,0.10); --accent-dim2:rgba(91,91,214,0.18);
+    --accent2:#0891B2; --accent2-rgb:8,145,178; --accent2-dim:rgba(8,145,178,0.10);
+    --text:#0F172A; --text2:#46506A; --text3:#7A859F; --red:#DC2626; --pending:#B45309;
+    --on-accent:#FFFFFF; --nav-bg:rgba(255,255,255,0.85); --grid:rgba(20,30,70,0.03);
+    color-scheme: light;
+  }
+  .switch{position:relative;width:50px;height:30px;flex-shrink:0}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .switch span{position:absolute;inset:0;border-radius:15px;background:var(--bg4);border:0.5px solid var(--border2);transition:background .2s;cursor:pointer}
+  .switch span::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+  .switch input:checked+span{background:var(--accent)}
+  .switch input:checked+span::after{transform:translateX(20px)}
+  .settings{margin:0 20px;background:var(--bg2);border:0.5px solid var(--border);border-radius:16px;padding:2px 16px}
+  .setting-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0;border-top:0.5px solid var(--border)}
+  .setting-row:first-child{border-top:none}
+  .setting-title{font-size:15px;font-weight:600}
+  .setting-sub{font-size:12px;color:var(--text3);margin-top:3px}
+  .sensitive{transition:filter .2s}
+  body.hide-amounts .sensitive{filter:blur(8px);user-select:none}
+  body.no-glass .bottom-nav, body.no-glass .modal-overlay{backdrop-filter:none;-webkit-backdrop-filter:none}
+  body.no-glass .bottom-nav{background:var(--bg2)}
+  body.reduce-motion *, body.reduce-motion *::before, body.reduce-motion *::after{animation:none!important;transition:none!important}
 
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
@@ -42,9 +60,9 @@
     position: fixed;
     inset: 0;
     background-image:
-      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212,168,67,0.08) 0%, transparent 60%),
-      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.015) 40px),
-      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.015) 40px);
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(var(--accent-rgb),0.08) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, var(--grid) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, var(--grid) 40px);
     pointer-events: none;
     z-index: 0;
   }
@@ -60,19 +78,19 @@
   .logo { display: flex; align-items: center; gap: 10px; }
   .logo-icon {
     width: 32px; height: 32px; border-radius: 8px;
-    background: var(--gold-dim2); border: 0.5px solid var(--gold);
+    background: var(--accent-dim2); border: 0.5px solid var(--accent);
     display: flex; align-items: center; justify-content: center;
   }
   .logo-icon svg { width: 18px; height: 18px; }
   .logo-name { font-size: 15px; font-weight: 700; letter-spacing: 0.04em; }
-  .logo-name span { color: var(--gold); }
+  .logo-name span { color: var(--accent); }
   .status-pill {
     display: flex; align-items: center; gap: 6px;
-    background: var(--green-dim); border: 0.5px solid rgba(61,214,140,0.3);
-    border-radius: 20px; padding: 5px 12px; font-size: 12px; color: var(--green); font-weight: 500;
+    background: var(--accent2-dim); border: 0.5px solid rgba(var(--accent2-rgb),0.3);
+    border-radius: 20px; padding: 5px 12px; font-size: 12px; color: var(--accent2); font-weight: 500;
   }
   .status-dot {
-    width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent2);
     animation: pulse 2s infinite;
   }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
@@ -86,19 +104,19 @@
   .rate-hero::after {
     content: ''; position: absolute; top: 0; right: 0;
     width: 180px; height: 180px;
-    background: radial-gradient(circle, rgba(212,168,67,0.06) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(var(--accent-rgb),0.06) 0%, transparent 70%);
     pointer-events: none;
   }
   .rate-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
   .rate-main { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
-  .rate-value { font-family: 'JetBrains Mono', monospace; font-size: 42px; font-weight: 600; color: var(--gold); line-height: 1; }
+  .rate-value { font-family: 'JetBrains Mono', monospace; font-size: 42px; font-weight: 600; color: var(--accent); line-height: 1; }
   .rate-unit { font-size: 16px; font-weight: 500; color: var(--text2); }
   .rate-sub { font-size: 13px; color: var(--text3); margin-top: 6px; }
   .rate-badge {
     display: inline-flex; align-items: center; gap: 4px;
-    background: var(--gold-dim); border: 0.5px solid rgba(212,168,67,0.3);
+    background: var(--accent-dim); border: 0.5px solid rgba(var(--accent-rgb),0.3);
     border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 600;
-    color: var(--gold); letter-spacing: 0.05em; margin-top: 12px;
+    color: var(--accent); letter-spacing: 0.05em; margin-top: 12px;
   }
 
   /* ── Stats ── */
@@ -119,7 +137,7 @@
   .calc-input {
     background: none; border: none; outline: none;
     font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 600;
-    color: var(--text); width: 100%; caret-color: var(--gold);
+    color: var(--text); width: 100%; caret-color: var(--accent);
     /* Remove spinner arrows */
     -moz-appearance: textfield;
   }
@@ -132,8 +150,8 @@
     border-radius: 8px; letter-spacing: 0.04em;
   }
   .calc-arrow { display: flex; align-items: center; justify-content: center; padding: 2px 18px; background: var(--bg3); }
-  .calc-arrow svg { color: var(--gold); }
-  .calc-result { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 600; color: var(--gold); }
+  .calc-arrow svg { color: var(--accent); }
+  .calc-result { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 600; color: var(--accent); }
   .calc-warning { margin: 10px 18px 14px; font-size: 12px; color: var(--red); display: none; }
   .calc-warning.show { display: block; }
   .calc-min-hint { font-size: 12px; color: var(--text3); padding: 0 18px 14px; }
@@ -141,7 +159,7 @@
   /* ── CTA ── */
   .cta-wrap { padding: 0 20px; margin-top: 14px; }
   .cta-btn {
-    width: 100%; padding: 16px; background: var(--gold); color: #0a0a0a;
+    width: 100%; padding: 16px; background: var(--accent); color: var(--on-accent);
     border: none; border-radius: 12px; font-family: 'Space Grotesk', sans-serif;
     font-size: 15px; font-weight: 700; letter-spacing: 0.04em; cursor: pointer;
     transition: opacity 0.15s, transform 0.1s;
@@ -156,9 +174,9 @@
   .step { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; }
   .step-num {
     width: 28px; height: 28px; min-width: 28px; border-radius: 8px;
-    background: var(--gold-dim); border: 0.5px solid rgba(212,168,67,0.35);
+    background: var(--accent-dim); border: 0.5px solid rgba(var(--accent-rgb),0.35);
     display: flex; align-items: center; justify-content: center;
-    font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: var(--gold);
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: var(--accent);
   }
   .step-content { flex: 1; }
   .step-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
@@ -173,7 +191,7 @@
   }
   .action-item:active { background: var(--bg3); border-color: var(--border2); }
   .action-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .action-icon.gold { background: var(--gold-dim2); }
+  .action-icon.gold { background: var(--accent-dim2); }
   .action-icon.gray { background: var(--bg4); }
   .action-icon svg { width: 20px; height: 20px; }
   .action-text { flex: 1; }
@@ -185,7 +203,7 @@
   .bottom-nav {
     position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
     width: 100%; max-width: 430px;
-    background: rgba(10,10,10,0.95); backdrop-filter: blur(12px);
+    background: var(--nav-bg); backdrop-filter: blur(12px);
     border-top: 0.5px solid var(--border2); display: flex; z-index: 100;
     padding-bottom: env(safe-area-inset-bottom);
   }
@@ -193,7 +211,7 @@
   .nav-item:active { opacity: 0.7; }
   .nav-icon { width: 22px; height: 22px; color: var(--text3); transition: color 0.15s; }
   .nav-label { font-size: 10px; font-weight: 600; letter-spacing: 0.04em; color: var(--text3); transition: color 0.15s; }
-  .nav-item.active .nav-icon, .nav-item.active .nav-label { color: var(--gold); }
+  .nav-item.active .nav-icon, .nav-item.active .nav-label { color: var(--accent); }
 
   /* ── Modal ── */
   .modal-overlay {
@@ -225,21 +243,21 @@
     -moz-appearance: textfield;
   }
   .form-input::-webkit-outer-spin-button, .form-input::-webkit-inner-spin-button { -webkit-appearance: none; }
-  .form-input:focus { border-color: var(--gold); }
+  .form-input:focus { border-color: var(--accent); }
   .form-input::placeholder { color: var(--text3); }
   .amount-display {
     background: var(--bg3); border: 0.5px solid var(--border); border-radius: 10px;
     padding: 13px 14px; display: flex; justify-content: space-between; align-items: center;
   }
   .amount-display span:first-child { font-size: 13px; color: var(--text3); }
-  .amount-display span:last-child { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 600; color: var(--gold); }
+  .amount-display span:last-child { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 600; color: var(--accent); }
   .info-box {
     background: var(--bg3); border: 0.5px solid var(--border2); border-radius: 10px;
     padding: 14px; margin-bottom: 16px; font-size: 13px; color: var(--text2); line-height: 1.6;
   }
   .info-box strong { color: var(--text); }
   .modal-submit {
-    width: 100%; padding: 15px; background: var(--gold); color: #0a0a0a;
+    width: 100%; padding: 15px; background: var(--accent); color: var(--on-accent);
     border: none; border-radius: 12px; font-family: 'Space Grotesk', sans-serif;
     font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 4px;
     transition: opacity 0.15s, transform 0.1s;
@@ -259,7 +277,7 @@
     white-space: nowrap; display: flex; align-items: center; gap: 8px;
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
-  .toast.success { border-color: rgba(61,214,140,0.4); color: var(--green); }
+  .toast.success { border-color: rgba(var(--accent2-rgb),0.4); color: var(--accent2); }
   .toast.error { border-color: rgba(255,85,85,0.4); color: var(--red); }
 
   /* ── Pages ── */
@@ -277,17 +295,17 @@
     background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px;
     margin: 0 20px 8px;
   }
-  .order-icon { width: 38px; height: 38px; border-radius: 10px; background: var(--gold-dim); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .order-icon svg { width: 18px; height: 18px; color: var(--gold); }
+  .order-icon { width: 38px; height: 38px; border-radius: 10px; background: var(--accent-dim); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .order-icon svg { width: 18px; height: 18px; color: var(--accent); }
   .order-info { flex: 1; }
   .order-title { font-size: 14px; font-weight: 600; }
   .order-date { font-size: 11px; color: var(--text3); margin-top: 3px; }
   .order-amount { text-align: right; }
-  .order-usdt { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; color: var(--gold); }
+  .order-usdt { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; color: var(--accent); }
   .order-rub { font-size: 12px; color: var(--text3); margin-top: 2px; }
   .order-status { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 3px; }
-  .order-status.pending { color: #F0A500; }
-  .order-status.done { color: var(--green); }
+  .order-status.pending { color: var(--pending); }
+  .order-status.done { color: var(--accent2); }
   .order-status.cancelled { color: var(--red); }
 
   /* ── Wallet page ── */
@@ -304,15 +322,15 @@
     transition: background 0.15s;
   }
   .wallet-btn:active { background: var(--bg3); }
-  .wallet-btn.primary { background: var(--gold-dim2); border-color: rgba(212,168,67,0.4); color: var(--gold); }
+  .wallet-btn.primary { background: var(--accent-dim2); border-color: rgba(var(--accent-rgb),0.4); color: var(--accent); }
 
   /* ── Profile page ── */
   .profile-card { margin: 0 20px; background: var(--bg2); border: 0.5px solid var(--border2); border-radius: 16px; padding: 20px; }
   .profile-avatar {
     width: 56px; height: 56px; border-radius: 50%;
-    background: var(--gold-dim2); border: 0.5px solid rgba(212,168,67,0.4);
+    background: var(--accent-dim2); border: 0.5px solid rgba(var(--accent-rgb),0.4);
     display: flex; align-items: center; justify-content: center;
-    font-size: 22px; font-weight: 700; color: var(--gold); flex-shrink: 0;
+    font-size: 22px; font-weight: 700; color: var(--accent); flex-shrink: 0;
     overflow: hidden;
   }
   .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -330,21 +348,21 @@
     color:var(--text3); cursor:pointer; font-family:'Space Grotesk',sans-serif;
     transition:all 0.15s;
   }
-  .dep-tab.active { background:var(--gold-dim2); border-color:rgba(212,168,67,0.4); color:var(--gold); }
+  .dep-tab.active { background:var(--accent-dim2); border-color:rgba(var(--accent-rgb),0.4); color:var(--accent); }
   .sim-method {
     flex:1; padding:9px; border-radius:10px; background:var(--bg3);
     border:0.5px solid var(--border); font-size:13px; font-weight:600;
     color:var(--text3); cursor:pointer; font-family:'Space Grotesk',sans-serif;
     transition:all 0.15s;
   }
-  .sim-method.active { background:var(--gold-dim2); border-color:rgba(212,168,67,0.4); color:var(--gold); }
+  .sim-method.active { background:var(--accent-dim2); border-color:rgba(var(--accent-rgb),0.4); color:var(--accent); }
   .op-btn {
     padding:9px 6px; border-radius:10px; background:var(--bg3);
     border:0.5px solid var(--border); font-size:12px; font-weight:600;
     color:var(--text3); cursor:pointer; font-family:'Space Grotesk',sans-serif;
     transition:all 0.15s; text-align:center;
   }
-  .op-btn.active { background:var(--gold-dim2); border-color:rgba(212,168,67,0.4); color:var(--gold); }
+  .op-btn.active { background:var(--accent-dim2); border-color:rgba(var(--accent-rgb),0.4); color:var(--accent); }
 
   /* ── Direction toggle ── */
   .dir-btn {
@@ -354,32 +372,8 @@
     color:var(--text3); cursor:pointer; font-family:'Space Grotesk',sans-serif;
     transition:all 0.15s;
   }
-  .dir-btn.active.sell { background:var(--gold-dim2); border-color:rgba(212,168,67,0.4); color:var(--gold); }
-  .dir-btn.active.buy  { background:var(--green-dim); border-color:rgba(61,214,140,0.35); color:var(--green); }
-
-  /* ── Reviews ── */
-  .review-pill {
-    display:inline-flex;align-items:center;gap:6px;padding:7px 14px;
-    border-radius:20px;font-size:13px;font-weight:600;border:0.5px solid;
-  }
-  .review-pill.count { background:var(--gold-dim2);border-color:rgba(212,168,67,0.4);color:var(--gold); }
-  .review-pill.stars { background:var(--bg2);border-color:var(--border2);color:var(--text); }
-  .review-card {
-    background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;padding:16px;
-  }
-  .review-top { display:flex;align-items:center;gap:12px;margin-bottom:10px; }
-  .review-avatar {
-    width:40px;height:40px;border-radius:50%;flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;
-    font-size:16px;font-weight:700;overflow:hidden;
-  }
-  .review-name { font-size:14px;font-weight:600; }
-  .review-stars { color:var(--gold);font-size:14px;margin-top:2px;letter-spacing:1px; }
-  .review-amount { font-size:12px;color:var(--text3);margin-top:6px; }
-  .review-text { font-size:13px;color:var(--text2);line-height:1.5;margin-top:6px; }
-  .stars-input { display:flex;gap:6px;margin:8px 0; }
-  .star-btn { font-size:28px;cursor:pointer;transition:transform 0.1s;background:none;border:none;padding:2px; }
-  .star-btn:active { transform:scale(0.9); }
+  .dir-btn.active.sell { background:var(--accent-dim2); border-color:rgba(var(--accent-rgb),0.4); color:var(--accent); }
+  .dir-btn.active.buy  { background:var(--accent2-dim); border-color:rgba(var(--accent2-rgb),0.35); color:var(--accent2); }
 
   /* Skeleton */
   .skeleton {
@@ -401,9 +395,9 @@
     <div class="logo">
       <div class="logo-icon">
         <svg viewBox="0 0 18 18" fill="none">
-          <circle cx="9" cy="9" r="7.5" stroke="#D4A843" stroke-width="1.2"/>
-          <path d="M9 4.5 L9 9 L12.5 12.5" stroke="#D4A843" stroke-width="1.4" stroke-linecap="round"/>
-          <circle cx="9" cy="9" r="1.5" fill="#D4A843"/>
+          <circle cx="9" cy="9" r="7.5" stroke="var(--accent)" stroke-width="1.2"/>
+          <path d="M9 4.5 L9 9 L12.5 12.5" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round"/>
+          <circle cx="9" cy="9" r="1.5" fill="var(--accent)"/>
         </svg>
       </div>
       <div class="logo-name">Eclipse <span>Exchange</span></div>
@@ -418,7 +412,7 @@
         <div style="flex:1">
           <div class="rate-label">Продажа USDT</div>
           <div class="rate-main">
-            <div class="rate-value" id="hero-rate-sell" style="font-size:30px">80.00</div>
+            <div class="rate-value" id="hero-rate-sell" style="font-size:30px">—</div>
             <div class="rate-unit" style="font-size:13px">₽</div>
           </div>
           <div class="rate-sub" style="font-size:11px">USDT → ₽</div>
@@ -427,24 +421,21 @@
         <div style="flex:1;padding-left:10px">
           <div class="rate-label">Покупка USDT</div>
           <div class="rate-main">
-            <div class="rate-value" id="hero-rate-buy" style="font-size:30px;color:var(--green)">90.00</div>
+            <div class="rate-value" id="hero-rate-buy" style="font-size:30px;color:var(--accent2)">—</div>
             <div class="rate-unit" style="font-size:13px">₽</div>
           </div>
           <div class="rate-sub" style="font-size:11px">₽ → USDT</div>
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:12px">
-        <div class="rate-badge">
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1.5L6.5 4H8.5L7 5.8L7.8 8L5 6.5L2.2 8L3 5.8L1.5 4H3.5L5 1.5Z" fill="#D4A843"/></svg>
-          ФИКСИРОВАН
-        </div>
+        <div class="rate-badge">Курс зафиксирован · <span id="rate-timer" style="font-family:'JetBrains Mono',monospace">—</span></div>
       </div>
-      <div id="referral-note" style="display:none;margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--gold-dim2);border:0.5px solid var(--gold);font-size:12px;line-height:1.5;color:var(--text)"></div>
+      <div id="referral-note" style="display:none;margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--accent-dim2);border:0.5px solid var(--accent);font-size:12px;line-height:1.5;color:var(--text)"></div>
     </div>
 
     <div class="stats-row">
-      <div class="stat-card"><div class="stat-num" style="color:var(--gold)" id="stat-deals">—</div><div class="stat-label">Сделок</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:var(--green)">100%</div><div class="stat-label">Успех</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--accent)" id="stat-deals">—</div><div class="stat-label">Сделок</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--accent2)">100%</div><div class="stat-label">Успех</div></div>
       <div class="stat-card"><div class="stat-num">~15м</div><div class="stat-label">Среднее</div></div>
     </div>
 
@@ -483,7 +474,7 @@
         </div>
       </div>
       <div class="calc-warning" id="calc-warning"></div>
-      <div class="calc-min-hint" id="calc-hint">Мин. сумма: 4 000 ₽ · Курс: 80 ₽/USDT</div>
+      <div class="calc-min-hint" id="calc-hint">Мин. сумма: 4 000 ₽ · Курс: <span data-rate="sell">—</span> ₽/USDT</div>
     </div>
 
     <div class="cta-wrap">
@@ -499,7 +490,7 @@
         <div class="step-num">01</div>
         <div class="step-content">
           <div class="step-title">Выберите направление</div>
-          <div class="step-desc">Продажа USDT → ₽ по курсу 80 ₽ или покупка USDT за ₽ по курсу 90 ₽</div>
+          <div class="step-desc">Продажа USDT → ₽ по курсу <span data-rate="sell">—</span> ₽ или покупка USDT за ₽ по курсу <span data-rate="buy">—</span> ₽</div>
         </div>
       </div>
       <div class="step">
@@ -529,37 +520,37 @@
     <div class="actions">
       <div class="action-item" onclick="openExchangeModal()">
         <div class="action-icon gold">
-          <svg viewBox="0 0 20 20" fill="none" stroke="#D4A843" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h14M10 3l7 7-7 7"/></svg>
+          <svg viewBox="0 0 20 20" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h14M10 3l7 7-7 7"/></svg>
         </div>
         <div class="action-text">
           <div class="action-title">Продать USDT → ₽</div>
-          <div class="action-sub">Курс 80 ₽ · Мин. 4 000 ₽</div>
+          <div class="action-sub">Курс <span data-rate="sell">—</span> ₽ · Мин. 4 000 ₽</div>
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
       <div class="action-item" onclick="openBuyModal()">
-        <div class="action-icon" style="background:var(--green-dim)">
-          <svg viewBox="0 0 20 20" fill="none" stroke="var(--green)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 10H3M10 3L3 10l7 7"/></svg>
+        <div class="action-icon" style="background:var(--accent2-dim)">
+          <svg viewBox="0 0 20 20" fill="none" stroke="var(--accent2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 10H3M10 3L3 10l7 7"/></svg>
         </div>
         <div class="action-text">
           <div class="action-title">Купить USDT за ₽</div>
-          <div class="action-sub">Курс 90 ₽ · Мин. 4 000 ₽</div>
+          <div class="action-sub">Курс <span data-rate="buy">—</span> ₽ · Мин. 4 000 ₽</div>
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
       <div class="action-item" onclick="openDepositModal()">
         <div class="action-icon gray">
-          <svg viewBox="0 0 20 20" fill="none" stroke="#9A9590" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="10" rx="2"/><path d="M7 6V5a3 3 0 0 1 6 0v1"/></svg>
+          <svg viewBox="0 0 20 20" fill="none" stroke="var(--text2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="10" rx="2"/><path d="M7 6V5a3 3 0 0 1 6 0v1"/></svg>
         </div>
         <div class="action-text">
           <div class="action-title">Пополнить баланс</div>
-          <div class="action-sub">Через Crypto Bot или xRocket</div>
+          <div class="action-sub">Через xRocket или Crypto Bot</div>
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
       <div class="action-item" onclick="switchPage('deals')">
         <div class="action-icon gray">
-          <svg viewBox="0 0 20 20" fill="none" stroke="#9A9590" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h12M4 10h8M4 14h5"/></svg>
+          <svg viewBox="0 0 20 20" fill="none" stroke="var(--text2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h12M4 10h8M4 14h5"/></svg>
         </div>
         <div class="action-text">
           <div class="action-title">История сделок</div>
@@ -569,7 +560,7 @@
       </div>
       <div class="action-item" onclick="openModal('modal-sim')">
         <div class="action-icon gray">
-          <svg viewBox="0 0 20 20" fill="none" stroke="#9A9590" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="10" height="16" rx="2"/><path d="M8 15h4"/></svg>
+          <svg viewBox="0 0 20 20" fill="none" stroke="var(--text2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="10" height="16" rx="2"/><path d="M8 15h4"/></svg>
         </div>
         <div class="action-text">
           <div class="action-title">Пополнение SIM</div>
@@ -579,7 +570,7 @@
       </div>
       <div class="action-item" onclick="openModal('modal-qr')">
         <div class="action-icon gray">
-          <svg viewBox="0 0 20 20" fill="none" stroke="#9A9590" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM13 13h4M15 11v4M17 11h-2"/></svg>
+          <svg viewBox="0 0 20 20" fill="none" stroke="var(--text2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM13 13h4M15 11v4M17 11h-2"/></svg>
         </div>
         <div class="action-text">
           <div class="action-title">Оплата QR</div>
@@ -588,13 +579,6 @@
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
     </div>
-    <!-- Reviews -->
-    <div class="section-header">Отзывы</div>
-    <div style="padding:0 20px 10px;display:flex;gap:8px" id="reviews-meta">
-      <div class="skeleton" style="width:110px;height:32px;border-radius:20px"></div>
-      <div class="skeleton" style="width:64px;height:32px;border-radius:20px"></div>
-    </div>
-    <div id="reviews-list" style="padding:0 20px;display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
 
   </div>
 
@@ -654,7 +638,7 @@
       </div>
       <div class="profile-stat-row">
         <span class="profile-stat-label">Баланс</span>
-        <span class="profile-stat-value" style="color:var(--gold)" id="profile-balance">—</span>
+        <span class="profile-stat-value" style="color:var(--accent)" id="profile-balance">—</span>
       </div>
     </div>
 
@@ -662,7 +646,7 @@
     <div class="actions">
       <div class="action-item" onclick="openSupport()">
         <div class="action-icon gold">
-          <svg viewBox="0 0 20 20" fill="none" stroke="#D4A843" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 20 20" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 10a8 8 0 0 1-8 8c-1.6 0-3.1-.5-4.3-1.3L2 18l1.3-3.7A8 8 0 1 1 18 10Z"/>
           </svg>
         </div>
@@ -674,7 +658,7 @@
       </div>
       <div class="action-item" onclick="openReferralModal()">
         <div class="action-icon gold">
-          <svg viewBox="0 0 20 20" fill="none" stroke="#D4A843" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 20 20" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
             <path d="M8 12a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1"/>
             <path d="M12 8a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1"/>
           </svg>
@@ -685,6 +669,20 @@
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
+    </div>
+
+    <div class="section-header">Оформление и приватность</div>
+    <div class="settings">
+      <div class="setting-row"><div><div class="setting-title">Светлая тема</div><div class="setting-sub">Светлый фон с мягкими акцентами</div></div>
+        <label class="switch"><input type="checkbox" data-setting="light"><span></span></label></div>
+      <div class="setting-row"><div><div class="setting-title">Скрывать суммы</div><div class="setting-sub">Баланс и суммы в истории</div></div>
+        <label class="switch"><input type="checkbox" data-setting="hideAmounts"><span></span></label></div>
+      <div class="setting-row"><div><div class="setting-title">Меньше движения</div><div class="setting-sub">Спокойные переходы без анимаций</div></div>
+        <label class="switch"><input type="checkbox" data-setting="reduceMotion"><span></span></label></div>
+      <div class="setting-row"><div><div class="setting-title">Эффект стекла</div><div class="setting-sub">Прозрачность и размытие в панелях</div></div>
+        <label class="switch"><input type="checkbox" data-setting="glass"><span></span></label></div>
+      <div class="setting-row"><div><div class="setting-title">Тактильный отклик</div><div class="setting-sub">На поддерживаемых устройствах</div></div>
+        <label class="switch"><input type="checkbox" data-setting="haptic"><span></span></label></div>
     </div>
   </div>
 
@@ -724,12 +722,12 @@
         <label class="form-label">Ваш баланс</label>
         <div class="amount-display">
           <span>Доступно</span>
-          <span id="ex-balance-display" style="color:var(--green)">— USDT</span>
+          <span id="ex-balance-display" style="color:var(--accent2)">— USDT</span>
         </div>
       </div>
       <div class="form-group">
         <label class="form-label">Сумма USDT</label>
-        <input class="form-input" type="number" id="ex-usdt" placeholder="Мин. ~51 USDT" inputmode="decimal" oninput="updateExchangeCalc()">
+        <input class="form-input" type="number" id="ex-usdt" placeholder="Сумма USDT" inputmode="decimal" oninput="updateExchangeCalc()">
       </div>
       <div class="form-group">
         <label class="form-label">Вы получите</label>
@@ -738,7 +736,7 @@
           <span id="ex-rub">—</span>
         </div>
       </div>
-      <div id="referral-note-ex" style="display:none;margin:-8px 0 16px;padding:10px 12px;border-radius:12px;background:var(--gold-dim2);border:0.5px solid var(--gold);font-size:12px;line-height:1.5;color:var(--text)"></div>
+      <div id="referral-note-ex" style="display:none;margin:-8px 0 16px;padding:10px 12px;border-radius:12px;background:var(--accent-dim2);border:0.5px solid var(--accent);font-size:12px;line-height:1.5;color:var(--text)"></div>
       <div class="form-group">
         <label class="form-label">Реквизиты для получения ₽</label>
         <input class="form-input" type="text" id="ex-requisites" placeholder="Номер карты или телефон (СБП)">
@@ -750,7 +748,7 @@
       <button class="modal-submit" id="ex-submit-btn" onclick="submitExchange()">
         Создать заявку
       </button>
-      <div class="modal-note">Курс 80 ₽/USDT · Без комиссии · Выплата в течение 15–30 мин</div>
+      <div class="modal-note">Курс <span data-rate="sell">—</span> ₽/USDT · Без комиссии · Выплата в течение 15–30 мин</div>
     </div>
   </div>
 </div>
@@ -762,7 +760,7 @@
     <div class="modal-title">Пополнить баланс</div>
     <div class="modal-body">
       <div class="info-box">
-        Принимаются чеки <strong>Crypto Bot</strong> и <strong>xRocket</strong>.<br>
+        Рекомендуем чеки <strong>xRocket</strong>, также принимаем <strong>Crypto Bot</strong>.<br>
         Укажите сумму и вставьте ссылку — менеджер проверит и зачислит.
       </div>
       <div class="form-group">
@@ -771,7 +769,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Ссылка на чек</label>
-        <input class="form-input" type="url" id="dep-url" placeholder="https://t.me/CryptoBot?start=..." inputmode="url">
+        <input class="form-input" type="url" id="dep-url" placeholder="https://t.me/xRocket?start=..." inputmode="url">
       </div>
       <button class="modal-submit" id="dep-submit-btn" onclick="submitDeposit('check')">Зачислить</button>
       <div class="modal-note">После проверки менеджером USDT зачислятся на ваш баланс</div>
@@ -786,13 +784,13 @@
     <div class="modal-title">Вывод USDT</div>
     <div class="modal-body">
       <div class="info-box">
-        После подтверждения заявки менеджер отправит вам чек <strong>Crypto Bot</strong> или <strong>xRocket</strong> в личные сообщения.
+        После подтверждения заявки менеджер отправит вам чек <strong>xRocket</strong> или <strong>Crypto Bot</strong> в личные сообщения.
       </div>
       <div class="form-group">
         <label class="form-label">Ваш баланс</label>
         <div class="amount-display">
           <span>Доступно</span>
-          <span id="wd-balance-display" style="color:var(--green)">— USDT</span>
+          <span id="wd-balance-display" style="color:var(--accent2)">— USDT</span>
         </div>
       </div>
       <div class="form-group">
@@ -835,8 +833,8 @@
         <div style="font-size:12px;color:var(--text3);margin-top:6px">Можно указать несколько номеров через запятую.</div>
       </div>
       <div class="form-group">
-        <label class="form-label">Ссылка на чек (Crypto Bot / xRocket)</label>
-        <input class="form-input" type="url" id="sim-check-url" placeholder="https://t.me/CryptoBot?start=..." inputmode="url">
+        <label class="form-label">Ссылка на чек (xRocket / Crypto Bot)</label>
+        <input class="form-input" type="url" id="sim-check-url" placeholder="https://t.me/xRocket?start=..." inputmode="url">
       </div>
       <div style="background:var(--bg3);border:0.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:14px">
         <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Итого к оплате</div>
@@ -870,18 +868,18 @@
       </div>
       <div class="form-group">
         <label class="form-label">QR для пополнения</label>
-        <div style="border:1px dashed rgba(212,168,67,0.35);border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:var(--bg3)" onclick="document.getElementById('qr-file').click()">
+        <div style="border:1px dashed rgba(var(--accent-rgb),0.35);border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:var(--bg3)" onclick="document.getElementById('qr-file').click()">
           <input type="file" id="qr-file" accept="image/*" style="display:none" onchange="handleQrFile(this)">
           <div id="qr-preview-wrap">
             <div style="font-size:26px;margin-bottom:8px">📷</div>
-            <div style="font-size:13px;font-weight:600;color:var(--gold)">Прикрепить QR</div>
+            <div style="font-size:13px;font-weight:600;color:var(--accent)">Прикрепить QR</div>
             <div style="font-size:11px;color:var(--text3);margin-top:4px">Файл ещё не выбран</div>
           </div>
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Ссылка на чек (Crypto Bot / xRocket)</label>
-        <input class="form-input" type="url" id="qr-check-url" placeholder="https://t.me/CryptoBot?start=..." inputmode="url">
+        <label class="form-label">Ссылка на чек (xRocket / Crypto Bot)</label>
+        <input class="form-input" type="url" id="qr-check-url" placeholder="https://t.me/xRocket?start=..." inputmode="url">
       </div>
       <div style="background:var(--bg3);border:0.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:14px">
         <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Итого к оплате</div>
@@ -902,21 +900,21 @@
     <div class="modal-body">
       <div class="action-item" style="margin-bottom:10px" onclick="closeModal('modal-direction');openExchangeModal()">
         <div class="action-icon gold">
-          <svg viewBox="0 0 20 20" fill="none" stroke="#D4A843" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h14M10 3l7 7-7 7"/></svg>
+          <svg viewBox="0 0 20 20" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h14M10 3l7 7-7 7"/></svg>
         </div>
         <div class="action-text">
           <div class="action-title">Продать USDT → ₽</div>
-          <div class="action-sub">Курс 80 ₽/USDT · Мин. 4 000 ₽</div>
+          <div class="action-sub">Курс <span data-rate="sell">—</span> ₽/USDT · Мин. 4 000 ₽</div>
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
       <div class="action-item" onclick="closeModal('modal-direction');openBuyModal()">
-        <div class="action-icon" style="background:var(--green-dim)">
-          <svg viewBox="0 0 20 20" fill="none" stroke="var(--green)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 10H3M10 3L3 10l7 7"/></svg>
+        <div class="action-icon" style="background:var(--accent2-dim)">
+          <svg viewBox="0 0 20 20" fill="none" stroke="var(--accent2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 10H3M10 3L3 10l7 7"/></svg>
         </div>
         <div class="action-text">
           <div class="action-title">Купить USDT за ₽</div>
-          <div class="action-sub">Курс 90 ₽/USDT · Мин. 4 000 ₽</div>
+          <div class="action-sub">Курс <span data-rate="buy">—</span> ₽/USDT · Мин. 4 000 ₽</div>
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
@@ -942,47 +940,18 @@
         <label class="form-label">Вы получите</label>
         <div class="amount-display">
           <span>USDT</span>
-          <span id="buy-usdt-result" style="color:var(--green)">—</span>
+          <span id="buy-usdt-result" style="color:var(--accent2)">—</span>
         </div>
       </div>
-      <div id="referral-note-buy" style="display:none;margin:-8px 0 16px;padding:10px 12px;border-radius:12px;background:var(--gold-dim2);border:0.5px solid var(--gold);font-size:12px;line-height:1.5;color:var(--text)"></div>
+      <div id="referral-note-buy" style="display:none;margin:-8px 0 16px;padding:10px 12px;border-radius:12px;background:var(--accent-dim2);border:0.5px solid var(--accent);font-size:12px;line-height:1.5;color:var(--text)"></div>
       <div class="form-group">
         <label class="form-label">Ваш USDT кошелёк (TRC-20)</label>
         <input class="form-input" type="text" id="buy-wallet" placeholder="T..." style="font-family:'JetBrains Mono',monospace;font-size:13px">
       </div>
-      <button class="modal-submit" id="buy-submit-btn" onclick="submitBuy()" style="background:var(--green);color:#0a0a0a">
+      <button class="modal-submit" id="buy-submit-btn" onclick="submitBuy()" style="background:var(--accent2);color:var(--on-accent)">
         Купить USDT
       </button>
-      <div class="modal-note">Курс 90 ₽/USDT · Реквизиты в течение 5–10 мин</div>
-    </div>
-  </div>
-</div>
-
-<!-- ── REVIEW MODAL ── -->
-<div class="modal-overlay" id="modal-review" onclick="closeModalOutside(event,'modal-review')">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Оставить отзыв</div>
-    <div class="modal-body">
-      <div class="info-box" style="margin-bottom:16px" id="review-order-info">
-        Расскажите о вашем опыте обмена
-      </div>
-      <div class="form-group">
-        <label class="form-label">Ваша оценка</label>
-        <div class="stars-input" id="stars-input">
-          <button class="star-btn" onclick="setRating(1)">⭐</button>
-          <button class="star-btn" onclick="setRating(2)">⭐</button>
-          <button class="star-btn" onclick="setRating(3)">⭐</button>
-          <button class="star-btn" onclick="setRating(4)">⭐</button>
-          <button class="star-btn" onclick="setRating(5)">⭐</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Комментарий (необязательно)</label>
-        <textarea class="form-input" id="review-text" placeholder="Всё прошло быстро и без проблем..." rows="3" style="resize:none"></textarea>
-      </div>
-      <button class="modal-submit" id="review-submit-btn" onclick="submitReview()">Отправить отзыв</button>
-      <div class="modal-note">Отзыв можно оставить только после завершённой сделки</div>
+      <div class="modal-note">Курс <span data-rate="buy">—</span> ₽/USDT · Реквизиты в течение 5–10 мин</div>
     </div>
   </div>
 </div>
@@ -1002,7 +971,7 @@
         <div class="form-group">
           <label class="form-label">Единица наценки</label>
           <div style="display:flex;gap:8px">
-            <button type="button" class="ref-unit-btn active" id="ref-unit-rub" onclick="setRefUnit('rub')" style="flex:1;padding:12px;border-radius:12px;border:0.5px solid var(--border2);background:var(--gold-dim2);color:var(--gold);font-weight:600;font-size:14px">₽</button>
+            <button type="button" class="ref-unit-btn active" id="ref-unit-rub" onclick="setRefUnit('rub')" style="flex:1;padding:12px;border-radius:12px;border:0.5px solid var(--border2);background:var(--accent-dim2);color:var(--accent);font-weight:600;font-size:14px">₽</button>
             <button type="button" class="ref-unit-btn" id="ref-unit-percent" onclick="setRefUnit('percent')" style="flex:1;padding:12px;border-radius:12px;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text2);font-weight:600;font-size:14px">%</button>
           </div>
         </div>
@@ -1030,7 +999,7 @@
         </div>
         <div class="profile-stat-row">
           <span class="profile-stat-label">Заработано</span>
-          <span class="profile-stat-value" style="color:var(--gold)" id="ref-earned-value">—</span>
+          <span class="profile-stat-value" style="color:var(--accent)" id="ref-earned-value">—</span>
         </div>
         <button class="modal-submit" style="margin-top:14px;background:var(--bg3);color:var(--text2)" onclick="showRefEditForm()">Изменить наценку</button>
       </div>
@@ -1053,8 +1022,6 @@
 
   if (tg) {
     tg.expand();
-    tg.setHeaderColor('#0a0a0a');
-    tg.setBackgroundColor('#0a0a0a');
     initData = tg.initData || '';
     tgUser = tg.initDataUnsafe?.user || null;
   }
@@ -1071,7 +1038,7 @@
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(path, opts);
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Server error');
+    if (!res.ok) { const err = new Error(data.error || 'Server error'); err.code = data.code; throw err; }
     return data;
   }
 
@@ -1154,7 +1121,7 @@
               : '<path d="M9 3v12M3 9l6 6 6-6"/>';
 
         const amountDisplay = o.type === 'buy'
-          ? `<div class="order-usdt" style="color:var(--green)">${Number(o.rub) > 0 ? Math.round(Number(o.rub)).toLocaleString('ru-RU') + ' ₽' : '—'}</div>
+          ? `<div class="order-usdt" style="color:var(--accent2)">${Number(o.rub) > 0 ? Math.round(Number(o.rub)).toLocaleString('ru-RU') + ' ₽' : '—'}</div>
              ${Number(o.usdt) > 0 ? `<div class="order-rub">${Number(o.usdt).toFixed(2)} USDT</div>` : ''}`
           : `<div class="order-usdt">${usdt > 0 ? usdt.toFixed(2) + ' USDT' : '—'}</div>
              ${rub > 0 ? `<div class="order-rub">${Math.round(rub).toLocaleString('ru-RU')} ₽</div>` : ''}`;
@@ -1169,7 +1136,7 @@
             <div class="order-title">${typeLabel}</div>
             <div class="order-date">${formatDate(o.created_at)}</div>
           </div>
-          <div class="order-amount">
+          <div class="order-amount sensitive">
             ${amountDisplay}
             <div class="order-status ${o.status}">${statusMap[o.status] || o.status}</div>
           </div>
@@ -1181,45 +1148,61 @@
     }
   }
 
-  const BASE_RATE_SELL = 80;  // USDT → RUB
-  const BASE_RATE_BUY  = 90;  // RUB → USDT
-  let RATE_SELL = BASE_RATE_SELL;
-  let RATE_BUY  = BASE_RATE_BUY;
-  let RATE = RATE_SELL; // alias for sell calculations
-  const MIN_RUB_SELL = 4000;
-  const MIN_RUB_BUY  = 4000;
-  const MIN_RUB = MIN_RUB_SELL; // alias
+  let BASE_RATE_SELL = 0, BASE_RATE_BUY = 0, RATE_SELL = 0, RATE_BUY = 0, RATE = 0;
+  const MIN_RUB_SELL = 4000, MIN_RUB_BUY = 4000, MIN_RUB = MIN_RUB_SELL;
   let calcDirection = 'sell'; // 'sell' | 'buy'
-  let myReferral = null; // данные о наценке, если текущего пользователя кто-то пригласил
+  let myReferral = null;
+  let quote = null, quoteLeft = 0, quoteLoading = false;
 
-  function applyReferralPricing(referral) {
-    myReferral = referral || null;
-    RATE_SELL = referral ? referral.sell_rate : BASE_RATE_SELL;
-    RATE_BUY  = referral ? referral.buy_rate  : BASE_RATE_BUY;
-    RATE = RATE_SELL;
+  // Курс фиксируется сервером на 10 минут; по истечении запрашиваем новый
+  async function loadQuote(silent) {
+    if (quoteLoading) return;
+    quoteLoading = true;
+    try {
+      const q = await api('GET', '/api/quote');
+      const changed = quote && (q.sell_rate !== quote.sell_rate || q.buy_rate !== quote.buy_rate);
+      quote = q; quoteLeft = q.seconds_left;
+      BASE_RATE_SELL = q.base_sell; BASE_RATE_BUY = q.base_buy;
+      RATE_SELL = q.sell_rate; RATE_BUY = q.buy_rate; RATE = RATE_SELL;
+      renderRates();
+      if (changed && !silent) showToast('Курс обновлён', 'info');
+    } catch (e) {
+      console.warn('Quote error:', e.message);
+      const t = document.getElementById('rate-timer'); if (t) t.textContent = 'нет связи';
+    } finally { quoteLoading = false; }
+  }
 
+  function tickQuote() {
+    if (!quote) return;
+    quoteLeft -= 1;
+    if (quoteLeft <= 0) { loadQuote(false); return; }
+    const t = document.getElementById('rate-timer');
+    if (t) t.textContent = Math.floor(quoteLeft / 60) + ':' + String(quoteLeft % 60).padStart(2, '0');
+  }
+
+  function applyReferralPricing(referral) { myReferral = referral || null; renderRates(); }
+
+  function renderRates() {
+    if (!RATE_SELL) return;
     document.getElementById('hero-rate-sell').textContent = RATE_SELL.toFixed(2);
     document.getElementById('hero-rate-buy').textContent = RATE_BUY.toFixed(2);
-
+    document.querySelectorAll('[data-rate="sell"]').forEach(e => e.textContent = RATE_SELL.toFixed(2));
+    document.querySelectorAll('[data-rate="buy"]').forEach(e => e.textContent = RATE_BUY.toFixed(2));
+    document.getElementById('ex-usdt').placeholder = 'Мин. ~' + Math.ceil(MIN_RUB_SELL / RATE_SELL) + ' USDT';
     const heroNote = document.getElementById('referral-note');
-    if (referral) {
-      const label = referral.delta_type === 'percent' ? `${referral.delta}%` : `${referral.delta} ₽`;
-      heroNote.innerHTML = `👤 Пользователь <strong>${referral.referrer_name}</strong> установил для вас комиссию: <strong>${label}</strong> к курсу`;
+    if (myReferral) {
+      const label = myReferral.delta_type === 'percent' ? `${myReferral.delta}%` : `${myReferral.delta} ₽`;
+      heroNote.innerHTML = `👤 Пользователь <strong>${myReferral.referrer_name}</strong> установил для вас комиссию: <strong>${label}</strong> к курсу`;
       heroNote.style.display = 'block';
-    } else {
-      heroNote.style.display = 'none';
-    }
+    } else { heroNote.style.display = 'none'; }
+    calcUpdate(); updateExchangeCalc(); updateBuyCalc();
+    document.getElementById('calc-hint').textContent =
+      `Мин. сумма: 4 000 ₽ · Курс: ${(calcDirection === 'sell' ? RATE_SELL : RATE_BUY).toFixed(2)} ₽/USDT`;
+  }
 
-    // Обновляем всё, что уже посчитано на экране, под новый курс
-    calcUpdate();
-    updateExchangeCalc();
-    updateBuyCalc();
-    if (document.getElementById('calc-hint')) {
-      document.getElementById('calc-hint').textContent =
-        calcDirection === 'sell'
-          ? `Мин. сумма: 4 000 ₽ · Курс: ${RATE_SELL.toFixed(2)} ₽/USDT`
-          : `Мин. сумма: 4 000 ₽ · Курс: ${RATE_BUY.toFixed(2)} ₽/USDT`;
-    }
+  async function handleQuoteError(e) {
+    if (e.code === 'QUOTE_EXPIRED') await loadQuote(true);
+    showToast(e.message, 'error');
   }
 
   function refNoteText(amountRub) {
@@ -1241,14 +1224,14 @@
       document.getElementById('output-currency').textContent = '₽ RUB';
       document.getElementById('calc-hint').textContent = `Мин. сумма: 4 000 ₽ · Курс: ${RATE_SELL.toFixed(2)} ₽/USDT`;
       document.getElementById('cta-label').textContent = 'Продать USDT';
-      document.getElementById('exchange-btn').style.background = 'var(--gold)';
+      document.getElementById('exchange-btn').style.background = 'var(--accent)';
       document.getElementById('main-input').placeholder = '0.00';
     } else {
       document.getElementById('input-currency').textContent  = '₽ RUB';
       document.getElementById('output-currency').textContent = 'USDT';
       document.getElementById('calc-hint').textContent = `Мин. сумма: 4 000 ₽ · Курс: ${RATE_BUY.toFixed(2)} ₽/USDT`;
       document.getElementById('cta-label').textContent = 'Купить USDT';
-      document.getElementById('exchange-btn').style.background = 'var(--green)';
+      document.getElementById('exchange-btn').style.background = 'var(--accent2)';
       document.getElementById('main-input').placeholder = '0.00';
     }
     document.getElementById('main-input').value = '';
@@ -1263,7 +1246,7 @@
     const result  = document.getElementById('main-result');
     const btn     = document.getElementById('exchange-btn');
 
-    if (!val || val <= 0) {
+    if (!val || val <= 0 || !RATE_SELL) {
       result.textContent = '—'; warning.classList.remove('show'); btn.disabled = false; return;
     }
 
@@ -1271,7 +1254,7 @@
       const rub = val * RATE_SELL;
       if (rub < MIN_RUB_SELL) {
         result.textContent = '—';
-        warning.textContent = `Минимальная сумма — 5 000 ₽ (~${(MIN_RUB_SELL/RATE_SELL).toFixed(0)} USDT)`;
+        warning.textContent = `Минимальная сумма — 4 000 ₽ (~${(MIN_RUB_SELL/RATE_SELL).toFixed(0)} USDT)`;
         warning.classList.add('show'); btn.disabled = true; return;
       }
       result.textContent = Math.round(rub).toLocaleString('ru-RU');
@@ -1309,6 +1292,7 @@
 
   // ── Modals ──────────────────────────────────────────────────────────────────
   function openExchangeModal() {
+    if (quote && quoteLeft < 30) loadQuote(true);
     const val = document.getElementById('main-input') ? document.getElementById('main-input').value : '';
     if (calcDirection === 'sell' && val && parseFloat(val) * RATE_SELL >= MIN_RUB_SELL) {
       document.getElementById('ex-usdt').value = val;
@@ -1324,6 +1308,7 @@
   }
 
   function openBuyModal() {
+    if (quote && quoteLeft < 30) loadQuote(true);
     const val = document.getElementById('main-input') ? document.getElementById('main-input').value : '';
     if (calcDirection === 'buy' && val && parseFloat(val) >= MIN_RUB_BUY) {
       document.getElementById('buy-rub').value = val;
@@ -1336,7 +1321,7 @@
     const rub = parseFloat(document.getElementById('buy-rub').value);
     const out = document.getElementById('buy-usdt-result');
     const note = document.getElementById('referral-note-buy');
-    if (!rub || rub < MIN_RUB_BUY) { out.textContent = '—'; note.style.display = 'none'; return; }
+    if (!rub || rub < MIN_RUB_BUY || !RATE_BUY) { out.textContent = '—'; note.style.display = 'none'; return; }
     out.textContent = (rub / RATE_BUY).toFixed(2) + ' USDT';
     if (myReferral) {
       const usdt = rub / RATE_BUY;
@@ -1356,7 +1341,7 @@
     const btn = document.getElementById('buy-submit-btn');
     btn.disabled = true; btn.textContent = 'Отправка...';
     try {
-      await api('POST', '/api/buy', { rub, wallet, usdt: parseFloat((rub / RATE_BUY).toFixed(2)) });
+      await api('POST', '/api/buy', { rub, wallet, quote_id: quote && quote.id });
       closeModal('modal-buy');
       showToast('Заявка создана! Реквизиты придут в течение 5–10 мин', 'success');
       document.getElementById('buy-rub').value = '';
@@ -1366,7 +1351,7 @@
         document.getElementById('main-input').value = '';
         document.getElementById('main-result').textContent = '—';
       }
-    } catch(e) { showToast(e.message, 'error'); }
+    } catch(e) { await handleQuoteError(e); }
     finally { btn.disabled = false; btn.textContent = 'Купить USDT'; }
   }
 
@@ -1392,7 +1377,7 @@
     const usdt = parseFloat(document.getElementById('ex-usdt').value);
     const rubEl = document.getElementById('ex-rub');
     const note = document.getElementById('referral-note-ex');
-    if (!usdt || usdt * RATE < MIN_RUB) { rubEl.textContent = '—'; note.style.display = 'none'; return; }
+    if (!usdt || !RATE || usdt * RATE < MIN_RUB) { rubEl.textContent = '—'; note.style.display = 'none'; return; }
     rubEl.textContent = Math.round(usdt * RATE).toLocaleString('ru-RU') + ' ₽';
     if (myReferral) {
       const commission = usdt * (BASE_RATE_SELL - RATE_SELL);
@@ -1409,7 +1394,7 @@
     const requisites = document.getElementById('ex-requisites').value.trim();
     const bank = document.getElementById('ex-bank').value.trim();
 
-    if (!usdt || usdt * RATE < MIN_RUB) { showToast('Минимум 4 000 ₽ (~51 USDT)', 'error'); return; }
+    if (!usdt || usdt * RATE < MIN_RUB) { showToast('Минимум 4 000 ₽ (~' + Math.ceil(MIN_RUB / RATE) + ' USDT)', 'error'); return; }
     if (!requisites || requisites.length < 5) { showToast('Укажите реквизиты для получения ₽', 'error'); return; }
     if (!bank) { showToast('Укажите банк', 'error'); return; }
 
@@ -1426,7 +1411,7 @@
     btn.textContent = 'Отправка...';
 
     try {
-      const result = await api('POST', '/api/exchange', { usdt, requisites: `${requisites} | ${bank}` });
+      const result = await api('POST', '/api/exchange', { usdt, requisites: `${requisites} | ${bank}`, quote_id: quote && quote.id });
       currentBalance = result.balance ?? (currentBalance - usdt);
       document.getElementById('wallet-balance').innerHTML =
         `${currentBalance.toFixed(2)} <span>USDT</span>`;
@@ -1439,8 +1424,8 @@
       document.getElementById('ex-rub').textContent = '—';
       document.getElementById('usdt-input') && (document.getElementById('usdt-input').value = '');
       document.getElementById('rub-result') && (document.getElementById('rub-result').textContent = '—');
-      loadReviews();
     } catch (e) {
+      if (e.code === 'QUOTE_EXPIRED') { await handleQuoteError(e); return; }
       if (e.message.includes('Недостаточно') || e.message.includes('баланс')) {
         closeModal('modal-exchange');
         showToast(e.message, 'error');
@@ -1510,7 +1495,7 @@
       qrFileBase64 = e.target.result;
       document.getElementById('qr-preview-wrap').innerHTML = `
         <img src="${qrFileBase64}" style="max-width:100%;max-height:150px;border-radius:8px;object-fit:contain">
-        <div style="font-size:11px;color:var(--green);margin-top:8px">✅ ${file.name}</div>`;
+        <div style="font-size:11px;color:var(--accent2);margin-top:8px">✅ ${file.name}</div>`;
     };
     reader.readAsDataURL(file);
   }
@@ -1603,7 +1588,7 @@
         document.getElementById('qr-check-url').value = '';
         document.getElementById('qr-total-usdt').textContent = '0$';
         qrFileBase64 = null;
-        document.getElementById('qr-preview-wrap').innerHTML = `<div style="font-size:26px;margin-bottom:8px">📷</div><div style="font-size:13px;font-weight:600;color:var(--gold)">Прикрепить QR</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Файл ещё не выбран</div>`;
+        document.getElementById('qr-preview-wrap').innerHTML = `<div style="font-size:26px;margin-bottom:8px">📷</div><div style="font-size:13px;font-weight:600;color:var(--accent)">Прикрепить QR</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Файл ещё не выбран</div>`;
       } catch(e) { showToast(e.message, 'error'); }
       finally { btn.disabled = false; btn.textContent = 'Продолжить'; }
     }
@@ -1624,7 +1609,7 @@
     const remain = currentBalance - usdt;
     if (remain < 0) { remainEl.textContent = '❌ Недостаточно'; remainEl.style.color = 'var(--red)'; return; }
     remainEl.textContent = remain.toFixed(2) + ' USDT';
-    remainEl.style.color = 'var(--gold)';
+    remainEl.style.color = 'var(--accent)';
   }
 
   async function submitWithdrawal() {
@@ -1665,11 +1650,11 @@
     const pctBtn = document.getElementById('ref-unit-percent');
     const label = document.getElementById('ref-value-label');
     if (unit === 'rub') {
-      rubBtn.style.background = 'var(--gold-dim2)'; rubBtn.style.color = 'var(--gold)';
+      rubBtn.style.background = 'var(--accent-dim2)'; rubBtn.style.color = 'var(--accent)';
       pctBtn.style.background = 'var(--bg3)'; pctBtn.style.color = 'var(--text2)';
       label.textContent = 'Величина наценки, ₽ на USDT';
     } else {
-      pctBtn.style.background = 'var(--gold-dim2)'; pctBtn.style.color = 'var(--gold)';
+      pctBtn.style.background = 'var(--accent-dim2)'; pctBtn.style.color = 'var(--accent)';
       rubBtn.style.background = 'var(--bg3)'; rubBtn.style.color = 'var(--text2)';
       label.textContent = 'Величина наценки, %';
     }
@@ -1760,107 +1745,46 @@
       hour: '2-digit', minute: '2-digit' }) + ' МСК';
   }
 
-  // ── Reviews ─────────────────────────────────────────────────────────────────
-  let selectedRating = 5;
-  let reviewOrderId = null;
+  // ── Settings (theme & privacy) ──────────────────────────────────────────────
+  const SETTINGS_KEY = 'ee_settings';
+  const settings = { light: false, hideAmounts: false, reduceMotion: false, glass: true, haptic: true };
+  try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); } catch (e) {}
 
-  function setRating(n) {
-    selectedRating = n;
-    document.querySelectorAll('.star-btn').forEach((btn, i) => {
-      btn.textContent = i < n ? '★' : '☆';
-      btn.style.color = i < n ? 'var(--gold)' : 'var(--text3)';
+  function haptic() {
+    if (settings.haptic && tg && tg.HapticFeedback) { try { tg.HapticFeedback.impactOccurred('light'); } catch (e) {} }
+  }
+  function applySettings() {
+    const root = document.documentElement;
+    root.dataset.theme = settings.light ? 'light' : 'dark';
+    document.body.classList.toggle('hide-amounts', settings.hideAmounts);
+    document.body.classList.toggle('reduce-motion', settings.reduceMotion);
+    document.body.classList.toggle('no-glass', !settings.glass);
+    if (tg) {
+      const bg = getComputedStyle(root).getPropertyValue('--bg').trim();
+      try { tg.setHeaderColor(bg); tg.setBackgroundColor(bg); } catch (e) {}
+    }
+  }
+  function initSettings() {
+    ['wallet-balance', 'profile-balance', 'profile-volume'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.classList.add('sensitive');
     });
-  }
-
-  async function loadReviews() {
-    try {
-      const data = await fetch('/api/reviews').then(r => r.json());
-      const metaEl = document.getElementById('reviews-meta');
-      const listEl = document.getElementById('reviews-list');
-
-      // Meta pills
-      metaEl.innerHTML = `
-        <div class="review-pill count">🗨 ${data.total} отзывов</div>
-        <div class="review-pill stars">${'★'.repeat(Math.round(data.avg))} ${data.avg}</div>
-      `;
-
-      if (!data.reviews.length) {
-        listEl.innerHTML = `<div style="font-size:13px;color:var(--text3);padding:8px 0">Пока нет отзывов. Будьте первым!</div>`;
-        return;
-      }
-
-      listEl.innerHTML = data.reviews.map(r => {
-        const name = [r.first_name, r.last_name].filter(Boolean).join(' ') || r.username || 'Пользователь';
-        const initials = name[0].toUpperCase();
-        const colors = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#DDA0DD','#F0A500'];
-        const color = colors[Number(String(r.tg_id || 0).slice(-1)) % colors.length];
-        const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
-        const amount = r.type === 'exchange'
-          ? `${Number(r.usdt).toFixed(2)} USDT → ${Math.round(Number(r.rub)).toLocaleString('ru-RU')} ₽`
-          : `${Number(r.usdt).toFixed(2)} USDT`;
-
-        const avatarHtml = r.avatar_url
-          ? `<img src="${r.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.innerHTML='${initials}';this.parentElement.style.background='${color}'">`
-          : initials;
-        const avatarBg = r.avatar_url ? 'transparent' : color;
-
-        return `<div class="review-card">
-          <div class="review-top">
-            <div class="review-avatar" style="background:${avatarBg}">${avatarHtml}</div>
-            <div>
-              <div class="review-name">${name}</div>
-              <div class="review-stars">${stars}</div>
-            </div>
-          </div>
-          ${r.text ? `<div class="review-text">${r.text}</div>` : ''}
-          <div class="review-amount">Сумма: ${amount}</div>
-        </div>`;
-      }).join('');
-    } catch(e) { console.warn('Reviews load error:', e.message); }
-  }
-
-  async function checkAndPromptReview() {
-    if (!initData) return;
-    try {
-      const data = await api('GET', '/api/reviews/eligible');
-      if (!data.eligible || !data.order) return;
-      reviewOrderId = data.order.id;
-
-      const typeMap = { exchange: 'обмена', deposit: 'пополнения', withdrawal: 'вывода' };
-      const orderType = typeMap[data.order.type] || 'сделки';
-      const amount = data.order.type === 'exchange'
-        ? `${Number(data.order.usdt).toFixed(2)} USDT`
-        : `${Number(data.order.usdt).toFixed(2)} USDT`;
-
-      document.getElementById('review-order-info').innerHTML =
-        `Сделка #${data.order.id} завершена 🎉<br>Оцените качество ${orderType} на <strong>${amount}</strong>`;
-
-      // Init stars
-      setRating(5);
-
-      // Show after short delay
-      setTimeout(() => openModal('modal-review'), 800);
-    } catch(e) {}
-  }
-
-  async function submitReview() {
-    if (!reviewOrderId) return;
-    const text = document.getElementById('review-text').value.trim();
-    const btn = document.getElementById('review-submit-btn');
-    btn.disabled = true; btn.textContent = 'Отправка...';
-    try {
-      await api('POST', '/api/reviews', { order_id: reviewOrderId, rating: selectedRating, text });
-      closeModal('modal-review');
-      showToast('Спасибо за отзыв! 🙏', 'success');
-      loadReviews();
-    } catch(e) { showToast(e.message, 'error'); }
-    finally { btn.disabled = false; btn.textContent = 'Отправить отзыв'; }
+    document.querySelectorAll('[data-setting]').forEach(el => {
+      el.checked = !!settings[el.dataset.setting];
+      el.addEventListener('change', () => {
+        settings[el.dataset.setting] = el.checked;
+        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+        applySettings(); haptic();
+      });
+    });
+    document.addEventListener('click', e => { if (e.target.closest('button,.nav-item,.action-item')) haptic(); });
+    applySettings();
   }
 
   // ── Init ────────────────────────────────────────────────────────────────────
   loadUser();
-  loadReviews();
-  setTimeout(checkAndPromptReview, 2000);
+  initSettings();
+  loadQuote(true);
+  setInterval(tickQuote, 1000);
 
   // Fetch/refresh avatar without needing /start
   if (initData) {
