@@ -822,7 +822,7 @@ app.post('/api/admin/broadcast', adminMiddleware, async (req, res) => {
 app.post('/api/admin/broadcast-photo', adminMiddleware, upload.single('photo'), async (req, res) => {
   const { message } = req.body;
   if (!req.file) return res.status(400).json({ error: 'Фото обязательно' });
-
+  if ((order.type === 'exchange' && !order.check_url) || order.type === 'withdrawal') {
   const users = await query("SELECT tg_id FROM users WHERE agreed=1 AND blocked=0");
   let sent = 0, failed = 0;
 
