@@ -510,6 +510,9 @@
   .export-btn { width: 100%; height: 56px; border-radius: 999px; background: var(--bg2); border: 1px solid var(--border2); color: var(--text); font-size: 16px; font-weight: 600; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
   .export-btn:disabled { opacity: 0.5; }
   .doc-row { padding: 18px 2px; border-top: 1px solid var(--border); font-size: 16px; cursor: pointer; } .export-btn + .doc-row { margin-top: 12px; }
+  .modal { max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  .modal-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 3; background: var(--bg2); }
+  .modal-x { width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border2); background: var(--bg3); color: var(--text); font-size: 15px; line-height: 1; cursor: pointer; font-family: inherit; }
 </style>
 </head>
 <body class="onb-open">
@@ -854,48 +857,19 @@
     <div class="modal-handle"></div>
     <div class="modal-title">Реферальная программа</div>
     <div class="modal-body">
-
-      <div id="ref-no-link">
-        <div class="info-box" style="margin-bottom:16px">
-          Вы можете создать <strong>реферальную ссылку</strong> и зарабатывать спред с каждой сделки привлечённого пользователя.<br><br>
-          Курс для вашего реферала будет отличаться от основного на заданную вами величину (в ₽ или %). Разница — ваш доход.
-        </div>
-        <div class="form-group">
-          <label class="form-label">Единица наценки</label>
-          <div style="display:flex;gap:8px">
-            <button type="button" class="ref-unit-btn active" id="ref-unit-rub" onclick="setRefUnit('rub')" style="flex:1;padding:12px;border-radius:12px;border:0.5px solid var(--border2);background:var(--accent-dim2);color:var(--accent);font-weight:600;font-size:14px">₽</button>
-            <button type="button" class="ref-unit-btn" id="ref-unit-percent" onclick="setRefUnit('percent')" style="flex:1;padding:12px;border-radius:12px;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text2);font-weight:600;font-size:14px">%</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label" id="ref-value-label">Величина наценки, ₽ на USDT</label>
-          <input class="form-input" type="number" id="ref-value" placeholder="Например, 2" inputmode="decimal" style="-moz-appearance:textfield">
-        </div>
-        <button class="modal-submit" id="ref-create-btn" onclick="createReferralLink()">Создать реф-ссылку</button>
-        <div class="modal-note">Ссылку и наценку можно будет изменить позже</div>
+      <div class="info-box" style="margin-bottom:16px">Приглашайте друзей по своей ссылке и получайте <strong class="ref-pct">2 %</strong> с каждой их сделки.<br><br>
+        Для приглашённого курс будет на <strong class="ref-pct">2 %</strong> ниже основного — эта разница и есть ваш доход.</div>
+      <div style="background:var(--bg3);border:0.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:14px">
+        <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Ваша реферальная ссылка</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text);word-break:break-all" id="ref-link-text">—</div>
       </div>
-
-      <div id="ref-has-link" style="display:none">
-        <div style="background:var(--bg3);border:0.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:14px">
-          <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Ваша реферальная ссылка</div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text);word-break:break-all" id="ref-link-text">—</div>
-        </div>
-        <button class="modal-submit" style="margin-bottom:10px" onclick="copyReferralLink()">Скопировать ссылку</button>
-        <div class="profile-stat-row" style="border-top:0.5px solid var(--border);padding-top:12px">
-          <span class="profile-stat-label">Наценка для рефералов</span>
-          <span class="profile-stat-value" id="ref-delta-value">—</span>
-        </div>
-        <div class="profile-stat-row">
-          <span class="profile-stat-label">Приглашено</span>
-          <span class="profile-stat-value" id="ref-invited-value">—</span>
-        </div>
-        <div class="profile-stat-row">
-          <span class="profile-stat-label">Заработано</span>
-          <span class="profile-stat-value" style="color:var(--accent)" id="ref-earned-value">—</span>
-        </div>
-        <button class="modal-submit" style="margin-top:14px;background:var(--bg3);color:var(--text2)" onclick="showRefEditForm()">Изменить наценку</button>
+      <button class="modal-submit" style="margin-bottom:10px" onclick="copyReferralLink()">Скопировать ссылку</button>
+      <div class="profile-stat-row" style="border-top:0.5px solid var(--border);padding-top:12px">
+        <span class="profile-stat-label">Ваша комиссия</span><span class="profile-stat-value ref-pct">2 %</span>
       </div>
-
+      <div class="profile-stat-row"><span class="profile-stat-label">Приглашено</span><span class="profile-stat-value" id="ref-invited-value">—</span></div>
+      <div class="profile-stat-row"><span class="profile-stat-label">Заработано</span><span class="profile-stat-value" style="color:var(--accent)" id="ref-earned-value">—</span></div>
+    
     </div>
   </div>
 </div>
@@ -949,7 +923,7 @@
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
 
 <script>
-  const MANAGER_URL = 'https://t.me/m/lyYDeILpZGUy';
+  const MANAGER_URL = 'https://t.me/EclipseSupp';
   let currentBalance = null; // tracked globally after loadUser
 
   // ── Telegram WebApp init ────────────────────────────────────────────────────
@@ -1085,11 +1059,9 @@
   const finalRate = a => { const r = unitRate(a); return highCheck ? Math.round(r * (1 - HC_DISCOUNT) * 100) / 100 : r; };
   const minRub = () => highCheck ? Math.max(MIN_RUB, HC_MIN_RUB) : MIN_RUB;
 
-  function refNoteText(amountRub) {
+  function refNoteText() {
     if (!myReferral) return '';
-    const label = myReferral.delta_type === 'percent' ? `${myReferral.delta}%` : `${myReferral.delta} ₽/USDT`;
-    return `👤 Пользователь <strong>${myReferral.referrer_name}</strong> установил для вас комиссию: <strong>${label}</strong>` +
-      (amountRub ? ` — это ${Math.round(amountRub).toLocaleString('ru-RU')} ₽ с этой сделки` : '');
+    return `👤 Вы пришли по ссылке <strong>${myReferral.referrer_name}</strong>: комиссия <strong>${myReferral.delta} %</strong> уже учтена в курсе и идёт пригласившему`;
   }
 
   // ── Rates / quote (фиксируется сервером на 10 минут) ────────────────────────
@@ -1249,6 +1221,18 @@
     try { await api('POST', '/api/export', {}); showToast('Файл отправлен вам в чат с ботом', 'success'); }
     catch (e) { showToast(e.message, 'error'); }
     finally { btn.disabled = false; }
+  }
+
+  // ── Modals: ✕ button in every window ────────────────────────────────────────
+  function initModals() {
+    document.querySelectorAll('.modal-overlay').forEach(ov => {
+      const t = ov.querySelector('.modal-title');
+      if (!t || t.querySelector('.modal-x')) return;
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'modal-x'; b.setAttribute('aria-label', 'Закрыть'); b.textContent = '✕';
+      b.onclick = () => closeModal(ov.id);
+      t.appendChild(b);
+    });
   }
 
   // ── Rate chart ──────────────────────────────────────────────────────────────
@@ -1546,67 +1530,18 @@
   }
 
   // ── Referral program ─────────────────────────────────────────────────────────
-  let refUnit = 'rub';
   let refCurrentLink = '';
-
-  function setRefUnit(unit) {
-    refUnit = unit;
-    const rubBtn = document.getElementById('ref-unit-rub');
-    const pctBtn = document.getElementById('ref-unit-percent');
-    const label = document.getElementById('ref-value-label');
-    if (unit === 'rub') {
-      rubBtn.style.background = 'var(--accent-dim2)'; rubBtn.style.color = 'var(--accent)';
-      pctBtn.style.background = 'var(--bg3)'; pctBtn.style.color = 'var(--text2)';
-      label.textContent = 'Величина наценки, ₽ на USDT';
-    } else {
-      pctBtn.style.background = 'var(--accent-dim2)'; pctBtn.style.color = 'var(--accent)';
-      rubBtn.style.background = 'var(--bg3)'; rubBtn.style.color = 'var(--text2)';
-      label.textContent = 'Величина наценки, %';
-    }
-  }
-
-  function showRefEditForm() {
-    document.getElementById('ref-has-link').style.display = 'none';
-    document.getElementById('ref-no-link').style.display = 'block';
-  }
 
   async function openReferralModal() {
     openModal('modal-referral');
-    document.getElementById('ref-no-link').style.display = 'block';
-    document.getElementById('ref-has-link').style.display = 'none';
     try {
-      const data = await api('GET', '/api/referral');
-      if (data.has_link) {
-        refCurrentLink = data.link;
-        document.getElementById('ref-link-text').textContent = data.link;
-        document.getElementById('ref-delta-value').textContent =
-          data.delta_type === 'percent' ? `${data.delta}%` : `${data.delta} ₽`;
-        document.getElementById('ref-invited-value').textContent = data.invited;
-        document.getElementById('ref-earned-value').textContent =
-          Number(data.earned).toFixed(2) + ' USDT';
-        document.getElementById('ref-no-link').style.display = 'none';
-        document.getElementById('ref-has-link').style.display = 'block';
-        setRefUnit(data.delta_type);
-        document.getElementById('ref-value').value = data.delta;
-      }
-    } catch(e) { /* пусть просто откроется форма создания */ }
-  }
-
-  async function createReferralLink() {
-    const value = parseFloat(document.getElementById('ref-value').value);
-    if (!value || value <= 0) return showToast('Введите положительное число', 'error');
-    const btn = document.getElementById('ref-create-btn');
-    btn.disabled = true; btn.textContent = 'Создаём...';
-    try {
-      const data = await api('POST', '/api/referral', { delta: value, delta_type: refUnit });
-      refCurrentLink = data.link;
-      showToast('Реферальная ссылка готова!', 'success');
-      await openReferralModal();
-    } catch(e) {
-      showToast(e.message, 'error');
-    } finally {
-      btn.disabled = false; btn.textContent = 'Создать реф-ссылку';
-    }
+      const d = await api('GET', '/api/referral');   // ссылка создаётся автоматически
+      refCurrentLink = d.link;
+      $('ref-link-text').textContent = d.link;
+      document.querySelectorAll('.ref-pct').forEach(el => el.textContent = `${d.delta} %`);
+      $('ref-invited-value').textContent = d.invited;
+      $('ref-earned-value').textContent = Number(d.earned).toFixed(2) + ' USDT';
+    } catch (e) { showToast(e.message, 'error'); }
   }
 
   function copyReferralLink() {
@@ -1687,6 +1622,7 @@
 
   // ── Init ────────────────────────────────────────────────────────────────────
   initSettings();
+  initModals();
   loadUser();
   loadStatus();
   loadQuote(true);
