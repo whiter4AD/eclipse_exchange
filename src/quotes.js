@@ -369,4 +369,31 @@ function register(d) {
   app.all(/^\/api\/(admin\/)?reviews/, (req, res) => res.status(410).json({ error: 'Отзывы отключены' }));
 }
 
-module.exports = { register, _test: { median, round2, CHECK_RE } };
+// ── Приветствие бота: статус приёма, актуальные курсы, операторы ───────────────
+const fmtRub = n => n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₽';
+
+// Курсы берутся из той же 10-минутной котировки, что видит пользователь в приложении (с учётом его реферальной комиссии)
+async function getGreetingData(query, bot, user, getEffectiveRate) {
+  const st = await getStatus(query).catch(() => ({ open: true, operators: 1 }));
+  let usdt = null, ton = null;
+  try {
+    const qt = await getQuote(query, bot, user.tg_id);
+    const eff = await getEffectiveRate(user, Number(qt.sell_rate), 'sell');
+    usdt = round2(eff.rate);
+    ton = qt.ton_usdt ? round2(Number(qt.ton_usdt) * usdt) : null;
+  } catch (e) { console.warn('[greeting] курс недоступен:', e.message); }
+  return { open: st.open, operators: st.operators, usdt, ton };
+}
+
+function greetingText(d) {
+  const L = ['*Eclipse Exchange* — обмен USDT и TON на рубли', ''];
+  L.push(d.open ? '*Приём заявок открыт* — можно обменивать прямо сейчас' : '*Приём заявок закрыт* — заявки временно не принимаются', '');
+  if (d.usdt) L.push('USDT: ' + fmtRub(d.usdt));
+  if (d.ton) L.push('TON: ' + fmtRub(d.ton));
+  if (d.usdt || d.ton) L.push('');
+  L.push('Рубли на карту или по СБП, обычно за ' + (process.env.PAYOUT_ETA || '15–30 минут'));
+  if (d.open) L.push('', 'Операторов на смене: ' + d.operators);
+  return L.join('\n');
+}
+
+module.exports = { register, getGreetingData, greetingText, _test: { median, round2, CHECK_RE } };
