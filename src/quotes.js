@@ -3,7 +3,7 @@
 // для /api/exchange, /api/buy, /api/deposit и отзывов перекрываются этим модулем.
 const https = require('https');
 
-const SPREAD = Number(process.env.SPREAD_RUB ?? 5);   // ± к рыночному курсу, ₽
+const SPREAD = Number(process.env.SPREAD_RUB ?? 0);   // наценка к рыночному курсу, ₽ (0 = клиент получает рыночный курс)
 const TTL_SEC = 600;          // котировка живёт 10 минут
 const REUSE_MIN_LEFT = 30;    // отдаём ту же котировку, пока до конца > 30 сек
 const GRACE_SEC = 10;         // допуск на задержку при создании заявки
@@ -42,6 +42,18 @@ async function bybitSide(side) {
 const SOURCES = [
   ['bybit-p2p', async () => {
     const r = await Promise.allSettled([bybitSide('1'), bybitSide('0')]);
+    const v = r.filter(x => x.status === 'fulfilled').map(x => x.value);
+    if (!v.length) throw new Error('no data');
+    return v.reduce((a, b) => a + b, 0) / v.length;
+  }],
+  ['okx-p2p', async () => {
+    const side = async sd => {
+      const j = await httpJson(`https://www.okx.com/v3/c2c/tradingOrders/books?quoteCurrency=RUB&baseCurrency=USDT&side=${sd}&paymentMethod=all&userType=all&showTrade=false&showFollow=false&showAlreadyTraded=false&isAbleFilter=false`);
+      const p = ((j && j.data && j.data[sd]) || []).map(i => Number(i.price)).filter(Number.isFinite).slice(0, 10);
+      if (p.length < 3) throw new Error('few ads');
+      return median(p);
+    };
+    const r = await Promise.allSettled([side('sell'), side('buy')]);
     const v = r.filter(x => x.status === 'fulfilled').map(x => x.value);
     if (!v.length) throw new Error('no data');
     return v.reduce((a, b) => a + b, 0) / v.length;
@@ -115,6 +127,9 @@ function ensureTable(query) {
     await query('ALTER TABLE quotes ADD COLUMN IF NOT EXISTS ton_usdt NUMERIC');
     await query('ALTER TABLE users ADD COLUMN IF NOT EXISTS agreed_at TIMESTAMPTZ');
     await query('CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT)');
+    await query('CREATE TABLE IF NOT EXISTS rate_history (id SERIAL PRIMARY KEY, ts TIMESTAMPTZ DEFAULT NOW(), sell NUMERIC, ton_usdt NUMERIC, source TEXT)');
+    await query('CREATE INDEX IF NOT EXISTS rate_history_ts ON rate_history (ts)');
+    await query("DELETE FROM rate_history WHERE ts < NOW() - INTERVAL '30 days'");
     await query("DELETE FROM quotes WHERE created_at < NOW() - INTERVAL '2 days'");
   })().catch(e => { tableReady = null; throw e; });
   return tableReady;
@@ -140,7 +155,9 @@ async function getQuote(query, bot, tgId) {
   const ex = await query(`SELECT *, ${LEFT} FROM quotes WHERE tg_id=$1 AND expires_at > NOW() + make_interval(secs => $2::double precision)
                           ORDER BY id DESC LIMIT 1`, [tgId, REUSE_MIN_LEFT]);
   if (ex.rows[0]) return ex.rows[0];
-  const m = await getMarket(bot);
+  const m = { ...(await getMarket(bot)) };
+  const adj = Number(await getSetting(query, 'market_adjust', '0')) || 0;   // поправка из админки, ₽
+  m.rate = m.rate + adj;
   const sell = round2(m.rate - SPREAD), buy = round2(m.rate + SPREAD);
   const ton = await getTon().catch(() => null);
   const r = await query(`INSERT INTO quotes (tg_id, market, sell_rate, buy_rate, expires_at, ton_usdt)
@@ -160,8 +177,25 @@ async function loadQuote(query, id, tgId) {
 const EXPIRED = { error: 'Курс обновился. Проверьте сумму и повторите', code: 'QUOTE_EXPIRED' };
 const CHECK_RE = /^https?:\/\/(?:www\.)?(?:t|telegram)\.me\/(?:xrocket|tonrocketbot|cryptobot|send)(?:[/?]|$)/i;
 
+let historyStarted = false;
+async function recordRate(query, bot) {
+  try {
+    await ensureTable(query);
+    const m = await getMarket(bot);
+    const adj = Number(await getSetting(query, 'market_adjust', '0')) || 0;
+    const ton = await getTon().catch(() => null);
+    await query('INSERT INTO rate_history (sell, ton_usdt, source) VALUES ($1,$2,$3)',
+      [round2(m.rate + adj - SPREAD), ton ? Math.round(ton * 10000) / 10000 : null, m.source]);
+  } catch (e) { console.warn('[rates] history:', e.message); }
+}
+
 function register(d) {
   const { app, query, authMiddleware, adminMiddleware, upsertUser, getEffectiveRate, notifyManager, formatMsk, bot, MIN_RUB } = d;
+  if (!historyStarted) {   // точка истории каждые 5 минут, независимо от посещаемости
+    historyStarted = true;
+    setTimeout(() => recordRate(query, bot), 8000).unref();
+    setInterval(() => recordRate(query, bot), 5 * 60 * 1000).unref();
+  }
   const wrap = fn => (req, res) => fn(req, res).catch(e => { console.error(e); if (!res.headersSent) res.status(500).json({ error: 'Ошибка сервера' }); });
 
   // Текущая котировка пользователя (с учётом реферальной наценки)
@@ -227,6 +261,62 @@ function register(d) {
         .catch(e => console.error('Exchange notify error:', e.message));
     }
     res.json({ success: true, order });
+  }));
+
+  // История курса для графика на главной (курс продажи за 1 USDT и 1 TON без персональной комиссии)
+  app.get('/api/rate-history', authMiddleware, wrap(async (req, res) => {
+    await ensureTable(query);
+    const range = req.query.range === '7d' ? '7d' : '24h';
+    const r = await query('SELECT ts, sell, ton_usdt FROM rate_history WHERE ts > NOW() - make_interval(hours => $1::int) ORDER BY ts', [range === '7d' ? 168 : 24]);
+    let rows = r.rows;
+    if (rows.length > 120) { const step = rows.length / 120; const last = rows[rows.length - 1]; rows = Array.from({ length: 120 }, (_, i) => rows[Math.floor(i * step)]); rows.push(last); }
+    res.json({ range, points: rows.map(p => ({ t: p.ts, usdt: Number(p.sell), ton: p.ton_usdt ? round2(Number(p.ton_usdt) * Number(p.sell)) : null })) });
+  }));
+
+  // Админка: откуда взят рыночный курс и ручная поправка к нему
+  if (adminMiddleware) {
+    app.get('/api/admin/rate', adminMiddleware, wrap(async (req, res) => {
+      const m = await getMarket(bot).catch(() => null);
+      const adjust = Number(await getSetting(query, 'market_adjust', '0')) || 0;
+      res.json({ market: m ? m.rate : null, source: m ? m.source : null, age_sec: m && m.at ? Math.round((Date.now() - m.at) / 1000) : null,
+        adjust, spread: SPREAD, sell: m ? round2(m.rate + adjust - SPREAD) : null, override: !!process.env.MARKET_RATE_OVERRIDE });
+    }));
+    app.post('/api/admin/rate', adminMiddleware, wrap(async (req, res) => {
+      const adjust = Number(req.body && req.body.adjust);
+      if (!Number.isFinite(adjust) || Math.abs(adjust) > 50) return res.status(400).json({ error: 'Поправка должна быть от −50 до 50 ₽' });
+      await setSetting(query, 'market_adjust', adjust);
+      res.json({ success: true, adjust });
+    }));
+  }
+
+  // Экспорт данных пользователя: JSON-файл отправляется ботом в личный чат (скачивание внутри Telegram WebView ненадёжно)
+  const exportTs = new Map();
+  app.post('/api/export', authMiddleware, wrap(async (req, res) => {
+    const user = await upsertUser(req.tgUser);
+    if (Date.now() - (exportTs.get(String(user.tg_id)) || 0) < 60000) return res.status(429).json({ error: 'Подождите минуту перед повторным экспортом' });
+    await ensureTable(query);
+    const [orders, invited, earned] = await Promise.all([
+      query('SELECT id, type, asset, amount, usdt, rub, requisites, check_url, status, high_check, created_at FROM orders WHERE tg_id=$1 ORDER BY id', [user.tg_id]),
+      query('SELECT COUNT(*) AS c FROM users WHERE referred_by=$1', [user.tg_id]),
+      query('SELECT COALESCE(SUM(ref_earn_usdt),0) AS s FROM orders WHERE ref_tg_id=$1', [user.tg_id]),
+    ]);
+    const data = {
+      service: 'Eclipse Exchange', exported_at: new Date().toISOString(),
+      profile: { telegram_id: Number(user.tg_id), username: user.username || null, first_name: user.first_name || null, last_name: user.last_name || null,
+        registered_at: user.created_at, terms_accepted_at: user.agreed_at || null, balance_usdt: Number(user.balance) },
+      referral: { code: user.ref_code || null, commission: user.ref_delta ? { value: Number(user.ref_delta), type: user.ref_delta_type } : null,
+        invited_users: Number(invited.rows[0].c), earned_usdt: Number(earned.rows[0].s), came_by_referral_link: !!user.referred_by },
+      orders: orders.rows.map(o => ({ ...o, amount: o.amount != null ? Number(o.amount) : null, usdt: Number(o.usdt), rub: Number(o.rub) })),
+    };
+    try {
+      await bot.sendDocument(user.tg_id, Buffer.from(JSON.stringify(data, null, 2), 'utf8'), { caption: 'Экспорт ваших данных Eclipse Exchange' },
+        { filename: `eclipse-export-${new Date().toISOString().slice(0, 10)}.json`, contentType: 'application/json' });
+    } catch (e) {
+      console.error('Export send error:', e.message);
+      return res.status(502).json({ error: 'Не удалось отправить файл. Напишите боту /start и повторите' });
+    }
+    exportTs.set(String(user.tg_id), Date.now());
+    res.json({ success: true });
   }));
 
   // Покупка USDT за ₽ больше не предоставляется
