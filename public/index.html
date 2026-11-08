@@ -433,7 +433,7 @@
   .pill-btn { margin-top: 22px; padding: 16px 34px; border-radius: 999px; background: var(--accent-solid); color: #fff; font-weight: 600; font-size: 17px; border: none; cursor: pointer; font-family: inherit; box-shadow: 0 10px 30px rgba(var(--accent-rgb),0.3); }
 
   /* ── v3: onboarding, home cards, exchange wizard ── */
-  .onb { position: fixed; inset: 0; z-index: 300; display: flex; justify-content: center; background: radial-gradient(120% 60% at 50% 100%, rgba(var(--accent-rgb),0.22), var(--bg) 60%); }
+  .onb { position: fixed; inset: 0; z-index: 300; display: flex; justify-content: center; background: radial-gradient(120% 60% at 50% 100%, rgba(var(--accent-rgb),0.22), transparent 60%), var(--bg); }
   .onb:not(.ready) .onb-inner { visibility: hidden; }
   .onb-inner { width: 100%; max-width: 430px; display: flex; flex-direction: column; padding: 14px 18px calc(18px + env(safe-area-inset-bottom)); box-sizing: border-box; }
   .onb-top { display: flex; align-items: center; gap: 14px; padding: 6px 0 10px; }
@@ -486,9 +486,17 @@
   .q-chip { height: 46px; border-radius: 999px; background: var(--bg2); border: 1px solid var(--border2); color: var(--text); font-size: 16px; font-family: inherit; cursor: pointer; } .q-chip.on { background: rgba(var(--accent-rgb),0.16); border-color: var(--accent); color: var(--accent); }
   .timer-card { display: flex; gap: 14px; align-items: center; padding: 6px 4px; }
   .sum-row { display: flex; justify-content: space-between; gap: 14px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 14px; color: var(--text2); } .sum-row b { color: var(--text); text-align: right; font-weight: 600; word-break: break-word; }
+  body.onb-open .bottom-nav, body.onb-open .topbar-wrap { display: none; }
+  .toast { z-index: 500; }
+  .doc-sheet { position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; }
+  .doc-box { width: 100%; max-width: 430px; max-height: 86vh; background: var(--bg2); border: 1px solid var(--border2); border-radius: 26px 26px 0 0; padding: 18px 20px calc(18px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; box-sizing: border-box; }
+  .doc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 20px; font-weight: 700; padding-bottom: 12px; }
+  .doc-head button { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border2); background: var(--bg3); color: var(--text); cursor: pointer; font-size: 16px; }
+  .doc-body { overflow-y: auto; flex: 1; font-size: 14px; line-height: 1.6; color: var(--text2); padding-bottom: 14px; }
+  .doc-body p { margin: 0 0 12px; }
 </style>
 </head>
-<body>
+<body class="onb-open">
 
 <div class="app">
 
@@ -861,18 +869,18 @@
   <div class="onb-top"><div class="onb-seg"><i class="on"></i><i></i><i></i><i></i><i></i></div><button class="onb-skip" id="onb-skip" onclick="onbGo(4)">Пропустить</button></div>
   <div class="onb-body">
     <div class="onb-slide on">
-      <div class="onb-card"><div class="onb-logo"><svg width="46" height="46" viewBox="0 0 48 48"><circle cx="24" cy="24" r="14" fill="#fff"/><circle cx="30" cy="19" r="12" fill="var(--bg3)"/></svg></div>
+      <div class="onb-card"><div class="onb-logo"><svg width="46" height="46" viewBox="0 0 48 48"><circle cx="24" cy="24" r="14" fill="#fff"/></svg></div>
         <div class="onb-coins"><span class="xc-coin big">₮</span><i>+</i><span class="xc-coin ton big"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M4.5 7h15L12 19.5z"/><path d="M12 7v12.5"/></svg></span><i>→</i><span class="xc-coin rub big">₽</span></div>
         <div class="onb-cap">Рубли приходят на вашу карту или по СБП</div></div>
       <h2>Крипта в рубли на вашу карту</h2><p>Меняйте USDT и TON на рубли. Чек прикладывается к заявке, деньги приходят на ваши реквизиты.</p>
     </div>
     <div class="onb-slide">
       <div class="onb-card" style="padding:16px">
-        <div class="seg" style="width:100%"><button class="on" style="flex:1">USDT</button><button style="flex:1">TON</button></div>
-        <div class="xc-row" style="margin:16px 4px 8px"><span class="xc-label">Вы отдаёте</span><span style="display:flex;align-items:center;gap:8px;font-weight:600"><span class="xc-coin">₮</span>100 USDT</span></div>
+        <div class="seg" style="width:100%"><button id="od-USDT" class="on" style="flex:1" onclick="onbDemo('USDT')">USDT</button><button id="od-TON" style="flex:1" onclick="onbDemo('TON')">TON</button></div>
+        <div class="xc-row" style="margin:16px 4px 8px"><span class="xc-label">Вы отдаёте</span><span style="display:flex;align-items:center;gap:8px;font-weight:600"><span class="xc-coin" id="od-coin">₮</span><span id="od-give">100 USDT</span></span></div>
         <div style="text-align:center;color:var(--text3)">↓</div>
-        <div class="xc-bottom" style="margin-top:8px;padding:16px 18px"><div class="xc-label-w" style="font-weight:600">Вы получаете</div><div class="xc-result" style="font-size:38px;margin-top:8px">≈ <span id="onb-demo">—</span> <small>₽</small></div><div class="xc-label-w" style="margin-top:8px;font-size:13px">на карту или СБП</div></div>
-        <div class="onb-cap" style="text-align:left;margin-top:12px">Курс зафиксирован на 10 минут</div></div>
+        <div class="xc-bottom" style="margin-top:8px;padding:16px 18px"><div class="xc-label-w" style="font-weight:600">Вы получаете</div><div class="xc-result" style="font-size:38px;margin-top:8px">≈ <span id="onb-demo">9 132<small>,00</small></span> <small>₽</small></div><div class="xc-label-w" style="margin-top:8px;font-size:13px">на карту или СБП</div></div>
+        <div class="onb-cap" style="text-align:left;margin-top:12px">Пример расчёта. Курс зафиксирован на 10 минут</div></div>
       <h2>Сумма видна заранее</h2><p>Курс держим 10 минут, комиссия уже в расчёте.</p>
     </div>
     <div class="onb-slide">
@@ -887,14 +895,19 @@
       <h2 style="margin-top:6px">Выберите тему</h2><p style="margin-bottom:14px">Её можно сменить позже в профиле.</p>
       <div class="theme-row"><button id="th-dark" class="on" onclick="setTheme(false)">🌙 Тёмная</button><button id="th-light" onclick="setTheme(true)">☀️ Светлая</button></div>
       <div class="onb-card" style="margin-top:14px;padding:14px 16px">
-        <label class="onb-check"><input type="checkbox" id="oc-terms" onchange="onbValidate()"><span>Принимаю условия обмена</span></label><a class="onb-link" onclick="openDoc('terms_url')">Прочитать: Условия обмена</a>
-        <label class="onb-check"><input type="checkbox" id="oc-priv" onchange="onbValidate()"><span>Ознакомлен с политикой конфиденциальности</span></label><a class="onb-link" onclick="openDoc('privacy_url')">Прочитать: Конфиденциальность</a>
-        <label class="onb-check"><input type="checkbox" id="oc-pd" onchange="onbValidate()"><span>Даю согласие на обработку персональных данных</span></label><a class="onb-link" onclick="openDoc('pd_url')">Прочитать: Обработка персональных данных</a>
+        <label class="onb-check"><input type="checkbox" id="oc-terms" onchange="onbValidate()"><span>Принимаю условия обмена</span></label><a class="onb-link" onclick="openDoc('terms')">Прочитать: Условия обмена</a>
+        <label class="onb-check"><input type="checkbox" id="oc-priv" onchange="onbValidate()"><span>Ознакомлен с политикой конфиденциальности</span></label><a class="onb-link" onclick="openDoc('privacy')">Прочитать: Конфиденциальность</a>
+        <label class="onb-check"><input type="checkbox" id="oc-pd" onchange="onbValidate()"><span>Даю согласие на обработку персональных данных</span></label><a class="onb-link" onclick="openDoc('pd')">Прочитать: Обработка персональных данных</a>
       </div>
     </div>
   </div>
   <div class="onb-foot"><button class="btn-ghost" id="onb-back" onclick="onbGo(onbIdx-1)" style="visibility:hidden">←</button><button class="cta-btn" id="onb-next" onclick="onbNext()"><span id="onb-next-label">Продолжить</span> <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
 </div></div>
+
+<div class="doc-sheet" id="doc-sheet" style="display:none" onclick="if(event.target===this)closeDoc()"><div class="doc-box">
+  <div class="doc-head"><span id="doc-title"></span><button onclick="closeDoc()">✕</button></div>
+  <div class="doc-body" id="doc-body"></div>
+  <button class="cta-btn" onclick="closeDoc()">Понятно</button></div></div>
 
 <!-- Toast -->
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
@@ -972,7 +985,7 @@
       applyReferralPricing(me.referral);
       checkOnboarding(me);
     } catch (e) {
-      $('onb').style.display = 'none';
+      hideOnb();
       console.warn('Could not load user from server:', e.message);
     }
   }
@@ -1075,7 +1088,6 @@
     $('rc-upd').textContent = !quote ? '—' : (homeAsset === 'TON' && !TON_USDT) ? 'Курс TON временно недоступен'
       : 'Обновлён в ' + new Date(quote.updated_at).toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit' }) + ' МСК';
     $('hc-sub').textContent = `курс ниже на ${+(HC_DISCOUNT * 100).toFixed(2)} %, выплата от ${HC_MIN_RUB.toLocaleString('ru-RU')} ₽, заявка в приоритете у операторов`;
-    $('onb-demo').textContent = RATE_SELL ? fmtMoney(100 * RATE_SELL) : '—';
     const note = $('referral-note');
     if (myReferral) { note.innerHTML = refNoteText(); note.style.display = 'block'; } else note.style.display = 'none';
     xRecalc();
@@ -1112,7 +1124,22 @@
     else if (tg && tg.openLink) tg.openLink(u); else window.open(u, '_blank');
   }
   function openChannel() { openLink(cfg.channel_url); }
-  function openDoc(key) { if (!cfg[key]) { showToast('Документ загружается, попробуйте ещё раз', 'info'); return; } openLink(cfg[key]); }
+  const DOCS = {"terms": ["Условия обмена", ["EclipseExchange — интерфейс оформления и сопровождения обмена. Юридическое наименование оператора, его адрес, контакт для обращений и сроки хранения данных должны быть заполнены владельцем до запуска реальных операций. Текущий текст не является окончательной публичной офертой.", "Вы указываете актив, сумму и собственные реквизиты. До создания заявки проверьте итог к выплате, курс, удержания и срок котировки.", "Ссылка на чек Crypto Bot передаётся для проверки. Отправка ссылки не означает получения средств. Оператор отдельно фиксирует фактически полученную сумму и валюту. Просроченный, уже использованный, защищённый или несоответствующий чек требует проверки.", "Рубли могут поступить несколькими переводами. Подтверждайте каждую часть только после проверки зачисления в банковском приложении. Если перевод не получен, откройте спор по этой части.", "Отмена до получения чека и возврат уже полученных средств — разные действия. Возврат согласуется отдельно с учётом проведённых выплат, фиксируется подтверждением и не считается завершённым по одному нажатию отмены.", "Клиент может обратиться в чат заявки и сохранить историю. Действия с финансовыми последствиями сопровождаются подтверждением и записью времени."]], "privacy": ["Конфиденциальность", ["EclipseExchange — интерфейс оформления и сопровождения обмена. Юридическое наименование оператора, его адрес, контакт для обращений и сроки хранения данных должны быть заполнены владельцем до запуска реальных операций. Текущий текст не является окончательной публичной офертой.", "Для оформления нужны идентификатор Telegram, имя, выбранный банк, телефон СБП либо номер карты, данные заявки, сообщения и подтверждения операций.", "Доступ к заявке необходим назначенному оператору и администратору для обработки, поддержки и разбора споров. Материалы обращения не публикуются. Секреты входа в банк, пароли, SMS-коды и CVV не запрашиваются.", "Экспорт данных доступен в профиле приложения; сохранённые реквизиты можно удалить.", "Порядок и срок хранения, адрес для запросов и список внешних обработчиков подлежат утверждению перед рабочим запуском."]], "pd": ["Обработка персональных данных", ["Я отдельно соглашаюсь на обработку предоставленных мной данных, необходимых для оформления и сопровождения заявки: идентификатора и профиля Telegram, имени, банковских реквизитов, сведений об обмене, сообщений и приложенных подтверждений.", "Цели: расчёт и исполнение обмена, связь по заявке, проверка платежа и разрешение спора. Операции: получение, запись, хранение, уточнение, использование, предоставление уполномоченным сотрудникам и удаление по утверждённым правилам.", "Это согласие не распространяется на рекламную рассылку. Настройки уведомлений об операциях и подписка на новости регулируются отдельно.", "Для запроса на отзыв согласия обратитесь в поддержку. Оператор должен разъяснить, какие данные сохраняются для учёта уже совершённых операций и на каком основании."]]};
+  function openDoc(key) {
+    const d = DOCS[key]; if (!d) return;
+    $('doc-title').textContent = d[0];
+    const body = $('doc-body'); body.innerHTML = '';
+    d[1].forEach(t => { const p = document.createElement('p'); p.textContent = t; body.appendChild(p); });
+    body.scrollTop = 0; $('doc-sheet').style.display = 'flex';
+  }
+  function closeDoc() { $('doc-sheet').style.display = 'none'; }
+  function onbDemo(a) {
+    const t = a === 'TON';
+    $('od-USDT').classList.toggle('on', !t); $('od-TON').classList.toggle('on', t);
+    const c = $('od-coin'); c.className = 'xc-coin' + (t ? ' ton' : ''); c.innerHTML = t ? TON_SVG : '₮';
+    $('od-give').textContent = '100 ' + a;
+    $('onb-demo').innerHTML = t ? '10 400<small>,00</small>' : '9 132<small>,00</small>';
+  }
 
   // ── Exchange page ───────────────────────────────────────────────────────────
   function goExchange() { openExchange(); }
@@ -1179,7 +1206,8 @@
   }
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
-  function showOnboarding(i) { $('onb').style.display = 'flex'; $('onb').classList.add('ready'); onbGo(i || 0); }
+  function hideOnb() { $('onb').style.display = 'none'; document.body.classList.remove('onb-open'); }
+  function showOnboarding(i) { document.body.classList.add('onb-open'); $('onb').style.display = 'flex'; $('onb').classList.add('ready'); onbGo(i || 0); }
   function onbGo(i) {
     onbIdx = Math.max(0, Math.min(4, i));
     document.querySelectorAll('.onb-slide').forEach((el, k) => el.classList.toggle('on', k === onbIdx));
@@ -1194,7 +1222,7 @@
   async function onbNext() {
     if (onbIdx < 4) { onbGo(onbIdx + 1); return; }
     $('onb-next').disabled = true;
-    try { await api('POST', '/api/agree', { terms: true, privacy: true, pd: true }); $('onb').style.display = 'none'; window.scrollTo(0, 0); }
+    try { await api('POST', '/api/agree', { terms: true, privacy: true, pd: true }); hideOnb(); window.scrollTo(0, 0); }
     catch (e) { showToast(e.message, 'error'); onbValidate(); }
   }
   function setTheme(light) {
@@ -1203,7 +1231,7 @@
     const cb = document.querySelector('[data-setting="light"]'); if (cb) cb.checked = light;
     $('th-dark').classList.toggle('on', !light); $('th-light').classList.toggle('on', light);
   }
-  function checkOnboarding(me) { if (me.agreed) $('onb').style.display = 'none'; else showOnboarding(0); }
+  function checkOnboarding(me) { if (me.agreed) hideOnb(); else showOnboarding(0); }
 
   // ── Page navigation ─────────────────────────────────────────────────────────
   function switchPage(page) {
