@@ -12,11 +12,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
-const RATE = 80;
-const RATE_BUY = 90;
 const MIN_RUB = 4000;
 const TERMS_URL = 'https://telegra.ph/Eclipse-Exchange-05-23';
-const REQUIRE_AGREEMENT = false; // временно отключено по просьбе — верните true, чтобы включить обратно
+const REQUIRE_AGREEMENT = false; // согласие теперь принимается в приложении (онбординг), в чате не требуется
 
 if (!BOT_TOKEN) { console.error('❌ BOT_TOKEN not set.'); process.exit(1); }
 if (!process.env.DATABASE_URL) { console.error('❌ DATABASE_URL not set.'); process.exit(1); }
@@ -60,22 +58,8 @@ async function initDB() {
       FOREIGN KEY (tg_id) REFERENCES users(tg_id)
     );
   `);
-  await query(`
-    CREATE TABLE IF NOT EXISTS reviews (
-      id          SERIAL PRIMARY KEY,
-      tg_id       BIGINT,
-      order_id    INTEGER,
-      rating      INTEGER DEFAULT 5,
-      text        TEXT,
-      avatar_url  TEXT,
-      created_at  TIMESTAMPTZ DEFAULT NOW(),
-      FOREIGN KEY (tg_id) REFERENCES users(tg_id),
-      UNIQUE (order_id)
-    );
-  `);
   // migrations
   try { await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`); } catch(e) {}
-  try { await query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS avatar_url TEXT`); } catch(e) {}
   // referral program
   try { await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_code TEXT UNIQUE`); } catch(e) {}
   try { await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by BIGINT`); } catch(e) {}
@@ -84,6 +68,11 @@ async function initDB() {
   try { await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ref_tg_id BIGINT`); } catch(e) {}
   try { await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ref_earn NUMERIC DEFAULT 0`); } catch(e) {}
   try { await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS ref_earn_usdt NUMERIC DEFAULT 0`); } catch(e) {}
+  // quotes / high-check / TON / consent / settings (новые поля и таблицы)
+  try { await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS high_check BOOLEAN DEFAULT FALSE`); } catch(e) {}
+  try { await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS asset TEXT DEFAULT 'USDT'`); } catch(e) {}
+  try { await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS amount NUMERIC`); } catch(e) {}
+  try { await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS agreed_at TIMESTAMPTZ`); } catch(e) {}
   console.log('✅ Database ready');
 }
 
@@ -92,18 +81,14 @@ async function getTelegramAvatarUrl(tgId) {
   try {
     const photos = await bot.getUserProfilePhotos(tgId, { limit: 1 });
     if (!photos.total_count) return null;
-    // Use smallest size to keep DB size reasonable
     const sizes = photos.photos[0];
     const fileId = sizes[0].file_id; // smallest
     const file = await bot.getFile(fileId);
     const url = `https://api.telegram.org/file/bot${BOT_TOKEN}/${file.file_path}`;
 
-    // Download and convert to base64
     const response = await new Promise((resolve, reject) => {
       const https = require('https');
-      const http = require('http');
-      const client = url.startsWith('https') ? https : http;
-      client.get(url, (res) => {
+      https.get(url, (res) => {
         const chunks = [];
         res.on('data', chunk => chunks.push(chunk));
         res.on('end', () => resolve(Buffer.concat(chunks)));
@@ -111,8 +96,7 @@ async function getTelegramAvatarUrl(tgId) {
       }).on('error', reject);
     });
 
-    const base64 = response.toString('base64');
-    return `data:image/jpeg;base64,${base64}`;
+    return `data:image/jpeg;base64,${response.toString('base64')}`;
   } catch(e) {
     return null;
   }
@@ -178,17 +162,14 @@ async function generateRefCode() {
   throw new Error('Не удалось сгенерировать реферальный код');
 }
 
-// Применяет реферальную наценку/скидку к базовому курсу.
-// direction: 'sell' — пользователь продаёт USDT (получает меньше при наличии реферера),
-//            'buy'  — пользователь покупает USDT (платит больше при наличии реферера).
+// Реферальная наценка/скидка к курсу USDT→₽ (пользователь продаёт, получает меньше при наличии реферера)
 function applyReferralRate(baseRate, delta, deltaType, direction) {
   if (!delta) return baseRate;
   const diff = deltaType === 'percent' ? baseRate * (Number(delta) / 100) : Number(delta);
   return direction === 'sell' ? baseRate - diff : baseRate + diff;
 }
 
-// Возвращает { rate, refTgId, refDelta, refDeltaType } — эффективный курс для пользователя
-// с учётом того, кто его пригласил, плюс данные для начисления рефереру.
+// Возвращает { rate, refTgId } — эффективный курс для пользователя с учётом того, кто его пригласил
 async function getEffectiveRate(user, baseRate, direction) {
   if (!user.referred_by) return { rate: baseRate, refTgId: null };
   const refUser = await getUser(user.referred_by);
@@ -211,6 +192,7 @@ function refLink(username, code) {
 
 // ── Telegram Bot ──────────────────────────────────────────────────────────────
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+try { require('./botguard')(bot); } catch (e) { console.warn('botguard не подключён:', e.message); } // логи ошибок бота, авто-исправление WEBAPP_URL
 const webAppUrl = () => process.env.WEBAPP_URL || 'https://your-app.railway.app';
 
 bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
@@ -264,7 +246,7 @@ bot.onText(/\/stats/, async (msg) => {
 
 function sendMainMenu(chatId, firstName) {
   bot.sendMessage(chatId,
-    `🌑 *Eclipse Exchange*\n\nОбмен USDT ⇄ ₽ по фиксированному курсу в обе стороны.\n\n💰 Продажа USDT → ₽: *80 ₽/USDT*\n💰 Покупка USDT за ₽: *90 ₽/USDT*\n📊 Без скрытых комиссий`,
+    `🌑 *Eclipse Exchange*\n\nОбмен USDT и TON на рубли.\n\n💱 Курс фиксируется на 10 минут\n📊 Комиссия уже внутри курса`,
     { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[
       { text: '🌑 Открыть обменник', web_app: { url: webAppUrl() } }
     ]]}}
@@ -292,11 +274,11 @@ async function sendStats(chatId) {
   );
 }
 
-// ── Notify manager ────────────────────────────────────────────────────────────
+// ── Notify manager (пополнение / вывод; продажа и т.п. уведомляются в quotes.js) ──
 async function notifyManager(order, user) {
   const managerChatId = process.env.MANAGER_CHAT_ID;
   if (!managerChatId) return;
-  const typeLabel = { exchange:'🔄 Обмен USDT→₽', deposit:'📥 Пополнение', withdrawal:'📤 Вывод USDT' }[order.type] || '📋';
+  const typeLabel = { exchange:'🔄 Обмен', deposit:'📥 Пополнение', withdrawal:'📤 Вывод USDT' }[order.type] || '📋';
   const userTag = user.username ? `@${user.username}` : `#${user.tg_id}`;
   let text = `${typeLabel}\n\n👤 ${userTag} (${user.first_name||''})\n🆔 Заявка: #${order.id}\n`;
   if (order.type === 'exchange') {
@@ -317,61 +299,67 @@ async function notifyManager(order, user) {
 
 // ── Callback queries ──────────────────────────────────────────────────────────
 bot.on('callback_query', async (query_cb) => {
-  const data = query_cb.data;
-  const tgId = query_cb.from.id;
+  try {
+    const data = query_cb.data || '';
+    const tgId = query_cb.from.id;
 
-  if (data === 'agree') {
-    await query('UPDATE users SET agreed=1 WHERE tg_id=$1', [tgId]);
-    await bot.answerCallbackQuery(query_cb.id, { text: '✅ Соглашение принято!' });
-    await bot.editMessageText('✅ Соглашение принято! Теперь вы можете пользоваться сервисом.',
-      { chat_id: query_cb.message.chat.id, message_id: query_cb.message.message_id }).catch(()=>{});
-    return sendMainMenu(tgId, query_cb.from.first_name);
-  }
-
-  if (data.startsWith('done_') || data.startsWith('cancel_')) {
-    const [action, orderId] = data.split('_');
-    const orderRes = await query('SELECT * FROM orders WHERE id=$1', [Number(orderId)]);
-    const order = orderRes.rows[0];
-    if (!order) return bot.answerCallbackQuery(query_cb.id, { text: 'Заявка не найдена' });
-
-    if (action === 'done') {
-      await query("UPDATE orders SET status='done' WHERE id=$1", [order.id]);
-      const isCryptoDeposit = order.type === 'deposit' && order.check_url &&
-          !['SIM','QR','СБП'].includes(order.requisites);
-      if (isCryptoDeposit) {
-        await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [order.usdt, order.tg_id]);
-      }
-      try {
-        const msg =
-          order.type === 'exchange'    ? `💴 ${Math.round(Number(order.rub)).toLocaleString('ru-RU')} ₽ отправлены на ваши реквизиты.`
-          : order.type === 'withdrawal' ? `💵 Чек на ${Number(order.usdt)} USDT отправлен вам в Telegram.`
-          : order.type === 'buy'        ? `💵 ${Number(order.usdt).toFixed(2)} USDT отправлены на ваш кошелёк.`
-          : isCryptoDeposit             ? `💵 ${Number(order.usdt)} USDT зачислены на ваш баланс.`
-          : `✅ Ваша заявка выполнена!`;
-        await bot.sendMessage(order.tg_id, `✅ Заявка #${order.id} выполнена!\n\n${msg}`);
-      } catch(e) {}
-      await bot.answerCallbackQuery(query_cb.id, { text: '✅ Выполнено' });
-      await bot.editMessageText(query_cb.message.text + '\n\n✅ ВЫПОЛНЕНО',
+    if (data === 'agree') {
+      await query('UPDATE users SET agreed=1 WHERE tg_id=$1', [tgId]);
+      await bot.answerCallbackQuery(query_cb.id, { text: '✅ Соглашение принято!' });
+      await bot.editMessageText('✅ Соглашение принято! Теперь вы можете пользоваться сервисом.',
         { chat_id: query_cb.message.chat.id, message_id: query_cb.message.message_id }).catch(()=>{});
+      return sendMainMenu(tgId, query_cb.from.first_name);
     }
 
-    if (action === 'cancel') {
-      await query("UPDATE orders SET status='cancelled' WHERE id=$1", [order.id]);
-      // Refund balance only for exchange/withdrawal (buy — user hasn't sent money yet)
-      if (order.type === 'exchange' || order.type === 'withdrawal') {
-        await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [order.usdt, order.tg_id]);
+    if (data.startsWith('done_') || data.startsWith('cancel_')) {
+      const [action, orderId] = data.split('_');
+      const orderRes = await query('SELECT * FROM orders WHERE id=$1', [Number(orderId)]);
+      const order = orderRes.rows[0];
+      if (!order) return bot.answerCallbackQuery(query_cb.id, { text: 'Заявка не найдена' });
+      // Защита от повторного нажатия: обрабатываем только заявки в ожидании
+      if (order.status !== 'pending') return bot.answerCallbackQuery(query_cb.id, { text: 'Заявка уже обработана' });
+
+      if (action === 'done') {
+        await query("UPDATE orders SET status='done' WHERE id=$1", [order.id]);
+        const isCryptoDeposit = order.type === 'deposit' && order.check_url &&
+            !['SIM','QR','СБП'].includes(order.requisites);
+        if (isCryptoDeposit) {
+          await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [order.usdt, order.tg_id]);
+        }
+        try {
+          const msg =
+            order.type === 'exchange'    ? `💴 ${Math.round(Number(order.rub)).toLocaleString('ru-RU')} ₽ отправлены на ваши реквизиты.`
+            : order.type === 'withdrawal' ? `💵 Чек на ${Number(order.usdt)} USDT отправлен вам в Telegram.`
+            : isCryptoDeposit             ? `💵 ${Number(order.usdt)} USDT зачислены на ваш баланс.`
+            : `✅ Ваша заявка выполнена!`;
+          await bot.sendMessage(order.tg_id, `✅ Заявка #${order.id} выполнена!\n\n${msg}`);
+        } catch(e) {}
+        await bot.answerCallbackQuery(query_cb.id, { text: '✅ Выполнено' });
+        await bot.editMessageText((query_cb.message.text || query_cb.message.caption || '') + '\n\n✅ ВЫПОЛНЕНО',
+          { chat_id: query_cb.message.chat.id, message_id: query_cb.message.message_id }).catch(()=>{});
       }
-      // Отменяем начисление рефереру, если оно было
-      if (order.ref_tg_id && Number(order.ref_earn_usdt) > 0) {
-        await query('UPDATE users SET balance=balance-$1 WHERE tg_id=$2', [order.ref_earn_usdt, order.ref_tg_id]);
+
+      if (action === 'cancel') {
+        await query("UPDATE orders SET status='cancelled' WHERE id=$1", [order.id]);
+        // Возврат на баланс: только для старых заявок на обмен (баланс списывался при создании) и для выводов.
+        // Новые продажи с чеком баланс не списывают — возвращать нечего.
+        if ((order.type === 'exchange' && !order.check_url) || order.type === 'withdrawal') {
+          await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [order.usdt, order.tg_id]);
+        }
+        // Отменяем начисление рефереру, если оно было
+        if (order.ref_tg_id && Number(order.ref_earn_usdt) > 0) {
+          await query('UPDATE users SET balance=balance-$1 WHERE tg_id=$2', [order.ref_earn_usdt, order.ref_tg_id]);
+        }
+        try {
+          await bot.sendMessage(order.tg_id, `❌ Заявка #${order.id} отклонена.\nЕсть вопросы — напишите менеджеру.`);
+        } catch(e) {}
+        await bot.answerCallbackQuery(query_cb.id, { text: '❌ Отклонено' });
+        await bot.editMessageText((query_cb.message.text || query_cb.message.caption || '') + '\n\n❌ ОТКЛОНЕНО',
+          { chat_id: query_cb.message.chat.id, message_id: query_cb.message.message_id }).catch(()=>{});
       }
-      try {
-        await bot.sendMessage(order.tg_id, `❌ Заявка #${order.id} отклонена.\nЕсть вопросы — напишите менеджеру.`);
-      } catch(e) {}
-      await bot.answerCallbackQuery(query_cb.id, { text: '❌ Отклонено' });
-      await bot.editMessageText(query_cb.message.text + '\n\n❌ ОТКЛОНЕНО',
-        { chat_id: query_cb.message.chat.id, message_id: query_cb.message.message_id }).catch(()=>{});
     }
+  } catch (e) {
+    console.error('callback_query error:', e.message);
   }
 });
 
@@ -381,25 +369,34 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 async function authMiddleware(req, res, next) {
-  const initData = req.headers['x-telegram-init-data'];
-  const tgUser = verifyTelegramData(initData);
-  if (!tgUser) return res.status(401).json({ error: 'Unauthorized' });
-  const user = await getUser(tgUser.id);
-  if (user && user.blocked) return res.status(403).json({ error: 'Заблокирован' });
-  req.tgUser = tgUser;
-  next();
+  try {
+    const tgUser = verifyTelegramData(req.headers['x-telegram-init-data']);
+    if (!tgUser) return res.status(401).json({ error: 'Unauthorized' });
+    const user = await getUser(tgUser.id);
+    if (user && user.blocked) return res.status(403).json({ error: 'Заблокирован' });
+    req.tgUser = tgUser;
+    next();
+  } catch (e) { console.error('auth error:', e.message); res.status(500).json({ error: 'Ошибка сервера' }); }
 }
 
 async function adminMiddleware(req, res, next) {
-  const initData = req.headers['x-telegram-init-data'];
-  const tgUser = verifyTelegramData(initData);
+  const tgUser = verifyTelegramData(req.headers['x-telegram-init-data']);
   if (!tgUser || !isAdmin(tgUser.id)) return res.status(403).json({ error: 'Forbidden' });
   req.tgUser = tgUser;
   next();
 }
 
+// Динамический курс, продажа USDT/TON с чеком, статус приёма, согласие, High-check
+require('./quotes').register({ app, query, authMiddleware, adminMiddleware, upsertUser, getEffectiveRate, notifyManager, formatMsk, bot, MIN_RUB });
+
+// Обёртка: ошибки в async-роутах не должны ронять процесс
+const wrap = fn => (req, res) => fn(req, res).catch(e => {
+  console.error(`${req.method} ${req.path} error:`, e.message);
+  if (!res.headersSent) res.status(500).json({ error: 'Ошибка сервера' });
+});
+
 // ── API Routes ────────────────────────────────────────────────────────────────
-app.get('/api/me', authMiddleware, async (req, res) => {
+app.get('/api/me', authMiddleware, wrap(async (req, res) => {
   const user = await upsertUser(req.tgUser);
   const stats = await query(`
     SELECT COUNT(*) as total_orders,
@@ -408,7 +405,7 @@ app.get('/api/me', authMiddleware, async (req, res) => {
     FROM orders WHERE tg_id=$1`, [user.tg_id]);
   const s = stats.rows[0];
 
-  // Персональный курс, если пользователя пригласили по реф-ссылке
+  // Если пользователя пригласили по реф-ссылке — показываем, кто и какую комиссию установил
   let referral = null;
   if (user.referred_by) {
     const refUser = await getUser(user.referred_by);
@@ -417,8 +414,6 @@ app.get('/api/me', authMiddleware, async (req, res) => {
         referrer_name: refUser.username ? `@${refUser.username}` : (refUser.first_name || 'пользователь'),
         delta: Number(refUser.ref_delta),
         delta_type: refUser.ref_delta_type,
-        sell_rate: applyReferralRate(RATE, Number(refUser.ref_delta), refUser.ref_delta_type, 'sell'),
-        buy_rate: applyReferralRate(RATE_BUY, Number(refUser.ref_delta), refUser.ref_delta_type, 'buy'),
       };
     }
   }
@@ -431,20 +426,18 @@ app.get('/api/me', authMiddleware, async (req, res) => {
       done_orders:Number(s.done_orders)||0,
       total_usdt:Number(s.total_usdt)||0 },
     referral });
-});
+}));
 
-app.get('/api/orders', authMiddleware, async (req, res) => {
+app.get('/api/orders', authMiddleware, wrap(async (req, res) => {
   const user = await upsertUser(req.tgUser);
   const result = await query('SELECT * FROM orders WHERE tg_id=$1 ORDER BY created_at DESC LIMIT 50', [user.tg_id]);
   res.json(result.rows);
-});
+}));
 
-// GET /api/referral — current user's referral link + stats
-app.get('/api/referral', authMiddleware, async (req, res) => {
+// GET /api/referral — ссылка и статистика текущего пользователя
+app.get('/api/referral', authMiddleware, wrap(async (req, res) => {
   const user = await upsertUser(req.tgUser);
-  if (!user.ref_code || !user.ref_delta) {
-    return res.json({ has_link: false });
-  }
+  if (!user.ref_code || !user.ref_delta) return res.json({ has_link: false });
   const [countRes, earnRes] = await Promise.all([
     query('SELECT COUNT(*) as c FROM users WHERE referred_by=$1', [user.tg_id]),
     query('SELECT COALESCE(SUM(ref_earn_usdt),0) as s FROM orders WHERE ref_tg_id=$1', [user.tg_id]),
@@ -458,10 +451,10 @@ app.get('/api/referral', authMiddleware, async (req, res) => {
     invited: Number(countRes.rows[0].c),
     earned: Number(earnRes.rows[0].s),
   });
-});
+}));
 
-// POST /api/referral — create or update the referral rate delta
-app.post('/api/referral', authMiddleware, async (req, res) => {
+// POST /api/referral — создать или обновить комиссию
+app.post('/api/referral', authMiddleware, wrap(async (req, res) => {
   const user = await upsertUser(req.tgUser);
   const { delta, delta_type } = req.body;
   const type = delta_type === 'percent' ? 'percent' : 'rub';
@@ -475,46 +468,10 @@ app.post('/api/referral', authMiddleware, async (req, res) => {
     [refCode, value, type, user.tg_id]);
   const username = await getBotUsername();
   res.json({ success: true, link: refLink(username, refCode), delta: value, delta_type: type });
-});
-
-app.post('/api/exchange', authMiddleware, async (req, res) => {
-  const user = await upsertUser(req.tgUser);
-  const { usdt, requisites } = req.body;
-  if (!usdt || typeof usdt!=='number' || usdt<=0) return res.status(400).json({ error:'Некорректная сумма' });
-  const { rate, refTgId } = await getEffectiveRate(user, RATE, 'sell');
-  const rub = usdt * rate;
-  if (rub < MIN_RUB) return res.status(400).json({ error:`Минимум ${MIN_RUB} ₽ (~${(MIN_RUB/rate).toFixed(2)} USDT)` });
-  if (!requisites || requisites.trim().length<5) return res.status(400).json({ error:'Укажите реквизиты' });
-  const balance = Number(user.balance);
-  if (balance < usdt) return res.status(400).json({
-    error:`Недостаточно средств. Баланс: ${balance.toFixed(2)} USDT`, code:'INSUFFICIENT_BALANCE', balance });
-  const refEarnRub = refTgId ? Number((usdt * (RATE - rate)).toFixed(2)) : 0;
-  const refEarnUsdt = refTgId ? Number((refEarnRub / RATE).toFixed(2)) : 0;
-  await query('UPDATE users SET balance=balance-$1 WHERE tg_id=$2', [usdt, user.tg_id]);
-  if (refTgId && refEarnUsdt > 0) await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [refEarnUsdt, refTgId]);
-  const r = await query(`INSERT INTO orders (tg_id,type,usdt,rub,requisites,ref_tg_id,ref_earn,ref_earn_usdt) VALUES ($1,'exchange',$2,$3,$4,$5,$6,$7) RETURNING *`,
-    [user.tg_id, usdt, rub, requisites.trim(), refTgId, refEarnRub, refEarnUsdt]);
-  notifyManager(r.rows[0], user);
-  res.json({ success:true, order:r.rows[0], balance:balance-usdt });
-});
-
-app.post('/api/deposit', authMiddleware, async (req, res) => {
-  const user = await upsertUser(req.tgUser);
-  const { check_url, usdt } = req.body;
-  if (!check_url || typeof check_url!=='string') return res.status(400).json({ error:'Ссылка обязательна' });
-  if (!check_url.includes('t.me/CryptoBot') && !check_url.includes('t.me/xRocket'))
-    return res.status(400).json({ error:'Только чеки Crypto Bot и xRocket' });
-  const usdtAmount = parseFloat(usdt);
-  if (!usdtAmount || usdtAmount<=0) return res.status(400).json({ error:'Укажите сумму' });
-  const r = await query(`INSERT INTO orders (tg_id,type,usdt,check_url) VALUES ($1,'deposit',$2,$3) RETURNING *`,
-    [user.tg_id, usdtAmount, check_url.trim()]);
-  notifyManager(r.rows[0], user);
-  res.json({ success:true, order:r.rows[0] });
-});
-
+}));
 
 // POST /api/deposit/fiat — SIM deposit
-app.post('/api/deposit/fiat', authMiddleware, async (req, res) => {
+app.post('/api/deposit/fiat', authMiddleware, wrap(async (req, res) => {
   const user = await upsertUser(req.tgUser);
   const { dep_type, rub_per_number, phones, total_rub, usdt_amount, check_url } = req.body;
 
@@ -548,10 +505,10 @@ app.post('/api/deposit/fiat', authMiddleware, async (req, res) => {
     } catch(e) { console.error('SIM notify error:', e.message); }
   }
   res.json({ success: true, order });
-});
+}));
 
 // POST /api/deposit/fiat-qr — QR deposit with image upload
-app.post('/api/deposit/fiat-qr', authMiddleware, upload.single('qr_image_file'), async (req, res) => {
+app.post('/api/deposit/fiat-qr', authMiddleware, upload.single('qr_image_file'), wrap(async (req, res) => {
   const user = await upsertUser(req.tgUser);
   const { dep_type, total_rub, usdt_amount, check_url } = req.body;
 
@@ -586,162 +543,36 @@ app.post('/api/deposit/fiat-qr', authMiddleware, upload.single('qr_image_file'),
     } catch(e) { console.error('QR notify error:', e.message); }
   }
   res.json({ success: true, order });
-});
+}));
 
-app.post('/api/withdrawal', authMiddleware, async (req, res) => {
+// Вывод остатка баланса (реферальные начисления и прежние пополнения)
+app.post('/api/withdrawal', authMiddleware, wrap(async (req, res) => {
   const user = await upsertUser(req.tgUser);
   const { usdt } = req.body;
   if (!usdt || typeof usdt!=='number' || usdt<=0) return res.status(400).json({ error:'Некорректная сумма' });
-  const balance = Number(user.balance);
-  if (balance < usdt) return res.status(400).json({
-    error:`Недостаточно средств. Баланс: ${balance.toFixed(2)} USDT`, code:'INSUFFICIENT_BALANCE' });
-  await query('UPDATE users SET balance=balance-$1 WHERE tg_id=$2', [usdt, user.tg_id]);
+  // атомарное списание
+  const d = await query('UPDATE users SET balance=balance-$1 WHERE tg_id=$2 AND balance>=$1 RETURNING balance', [usdt, user.tg_id]);
+  if (!d.rows[0]) return res.status(400).json({
+    error:`Недостаточно средств. Баланс: ${Number(user.balance).toFixed(2)} USDT`, code:'INSUFFICIENT_BALANCE' });
   const r = await query(`INSERT INTO orders (tg_id,type,usdt) VALUES ($1,'withdrawal',$2) RETURNING *`,
     [user.tg_id, usdt]);
   notifyManager(r.rows[0], user);
-  res.json({ success:true, order:r.rows[0], balance:balance-usdt });
-});
+  res.json({ success:true, order:r.rows[0], balance:Number(d.rows[0].balance) });
+}));
 
-// POST /api/buy — buy USDT for RUB
-app.post('/api/buy', authMiddleware, async (req, res) => {
+// POST /api/avatar/me — обновить аватар при открытии приложения
+app.post('/api/avatar/me', authMiddleware, wrap(async (req, res) => {
   const user = await upsertUser(req.tgUser);
-  const { rub, wallet } = req.body;
-  if (!rub || rub < 4000) return res.status(400).json({ error: 'Минимальная сумма 4 000 ₽' });
-  if (!wallet || wallet.length < 10) return res.status(400).json({ error: 'Укажите USDT кошелёк' });
-
-  const { rate, refTgId } = await getEffectiveRate(user, RATE_BUY, 'buy');
-  const usdt = Number((rub / rate).toFixed(2));
-  const refEarnRub = refTgId ? Number((usdt * (rate - RATE_BUY)).toFixed(2)) : 0;
-  const refEarnUsdt = refTgId ? Number((refEarnRub / RATE_BUY).toFixed(2)) : 0;
-
-  const r = await query(
-    `INSERT INTO orders (tg_id, type, usdt, rub, requisites, ref_tg_id, ref_earn, ref_earn_usdt) VALUES ($1, 'buy', $2, $3, $4, $5, $6, $7) RETURNING *`,
-    [user.tg_id, usdt, rub, wallet, refTgId, refEarnRub, refEarnUsdt]
-  );
-  const order = r.rows[0];
-  if (refTgId && refEarnUsdt > 0) await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [refEarnUsdt, refTgId]);
-
-  const managerChatId = process.env.MANAGER_CHAT_ID;
-  if (managerChatId) {
-    const userTag = user.username ? `@${user.username}` : `#${user.tg_id}`;
-    const text = `💰 Покупка USDT за ₽\n\n` +
-      `👤 ${userTag} (${user.first_name || ''})\n` +
-      `🆔 Заявка: #${order.id}\n` +
-      `💴 Отдаёт: ${Math.round(rub).toLocaleString('ru-RU')} ₽\n` +
-      `💵 Получает: ${Number(usdt).toFixed(2)} USDT\n` +
-      `👛 Кошелёк: ${wallet}\n` +
-      `⏰ ${formatMsk(order.created_at)}`;
-    try {
-      await bot.sendMessage(managerChatId, text, { reply_markup: { inline_keyboard: [[
-        { text: '✅ Выполнено', callback_data: `done_${order.id}` },
-        { text: '❌ Отклонить', callback_data: `cancel_${order.id}` },
-      ]]}});
-    } catch(e) { console.error('Buy notify error:', e.message); }
-  }
-  res.json({ success: true, order });
-});
-
-// POST /api/avatar/me — refresh avatar on WebApp open (no /start needed)
-app.post('/api/avatar/me', authMiddleware, async (req, res) => {
-  const user = await upsertUser(req.tgUser);
-  // Only re-fetch if no avatar saved yet
   if (user.avatar_url) return res.json({ avatar_url: user.avatar_url });
   const avatarUrl = await getTelegramAvatarUrl(user.tg_id);
   if (avatarUrl) {
     await query('UPDATE users SET avatar_url=$1 WHERE tg_id=$2', [avatarUrl, user.tg_id]);
   }
   res.json({ avatar_url: avatarUrl });
-});
+}));
 
-// GET /api/reviews — public, last reviews + count
-app.get('/api/reviews', async (req, res) => {
-  const reviews = await query(`
-    SELECT r.id, r.rating, r.text, r.created_at, r.order_id, r.avatar_url,
-           u.first_name, u.last_name, u.username,
-           o.usdt, o.rub, o.type
-    FROM reviews r
-    JOIN users u ON r.tg_id = u.tg_id
-    JOIN orders o ON r.order_id = o.id
-    ORDER BY r.created_at DESC LIMIT 3
-  `);
-  const total = await query('SELECT COUNT(*) as c FROM reviews');
-  const avg = await query('SELECT COALESCE(AVG(rating),5) as a FROM reviews');
-  const REVIEWS_OFFSET = 391; // старая база отзывов утеряна, показываем правдоподобный счётчик
-  res.json({
-    reviews: reviews.rows,
-    total: Number(total.rows[0].c) + REVIEWS_OFFSET,
-    avg: Number(Number(avg.rows[0].a).toFixed(1)),
-  });
-});
-
-// GET /api/reviews/eligible — check if user can leave a review
-app.get('/api/reviews/eligible', authMiddleware, async (req, res) => {
-  const user = await upsertUser(req.tgUser);
-  // Find completed exchange orders without a review
-  const eligible = await query(`
-    SELECT o.id, o.usdt, o.rub, o.type, o.created_at
-    FROM orders o
-    LEFT JOIN reviews r ON r.order_id = o.id
-    WHERE o.tg_id = $1
-      AND o.status = 'done'
-      AND o.type IN ('exchange', 'deposit', 'withdrawal')
-      AND r.id IS NULL
-    ORDER BY o.created_at DESC LIMIT 1
-  `, [user.tg_id]);
-  res.json({ eligible: eligible.rows.length > 0, order: eligible.rows[0] || null });
-});
-
-// POST /api/reviews — submit a review
-app.post('/api/reviews', authMiddleware, async (req, res) => {
-  const user = await upsertUser(req.tgUser);
-  const { order_id, rating, text } = req.body;
-
-  if (!order_id) return res.status(400).json({ error: 'order_id обязателен' });
-  if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: 'Оценка от 1 до 5' });
-
-  // Verify order belongs to user and is done
-  const order = await query(
-    "SELECT * FROM orders WHERE id=$1 AND tg_id=$2 AND status='done'",
-    [order_id, user.tg_id]
-  );
-  if (!order.rows[0]) return res.status(403).json({ error: 'Сделка не найдена или не завершена' });
-
-  // Check not already reviewed
-  const exists = await query('SELECT id FROM reviews WHERE order_id=$1', [order_id]);
-  if (exists.rows[0]) return res.status(400).json({ error: 'Отзыв уже оставлен' });
-
-  const avatarUrl = user.avatar_url || await getTelegramAvatarUrl(user.tg_id);
-
-  const r = await query(
-    'INSERT INTO reviews (tg_id, order_id, rating, text, avatar_url) VALUES ($1,$2,$3,$4,$5) RETURNING *',
-    [user.tg_id, order_id, rating, (text || '').trim().slice(0, 300), avatarUrl]
-  );
-  res.json({ success: true, review: r.rows[0] });
-});
-
-// GET /api/admin/reviews — all reviews for admin
-app.get('/api/admin/reviews', adminMiddleware, async (req, res) => {
-  const result = await query(`
-    SELECT r.id, r.rating, r.text, r.created_at, r.order_id, r.avatar_url, r.tg_id,
-           u.first_name, u.last_name, u.username,
-           o.usdt, o.rub, o.type
-    FROM reviews r
-    JOIN users u ON r.tg_id = u.tg_id
-    JOIN orders o ON r.order_id = o.id
-    ORDER BY r.created_at DESC
-  `);
-  const total = await query('SELECT COUNT(*) as c FROM reviews');
-  res.json({ reviews: result.rows, total: Number(total.rows[0].c) });
-});
-
-// DELETE /api/admin/reviews/:id
-app.delete('/api/admin/reviews/:id', adminMiddleware, async (req, res) => {
-  await query('DELETE FROM reviews WHERE id=$1', [Number(req.params.id)]);
-  res.json({ success: true });
-});
-
-// Admin
-app.get('/api/admin/stats', adminMiddleware, async (req, res) => {
+// ── Admin ─────────────────────────────────────────────────────────────────────
+app.get('/api/admin/stats', adminMiddleware, wrap(async (req, res) => {
   const [tu, au, mo, tr, tu2, pe, nt] = await Promise.all([
     query("SELECT COUNT(*) as c FROM users WHERE agreed=1"),
     query("SELECT COUNT(DISTINCT tg_id) as c FROM orders WHERE created_at >= NOW() - INTERVAL '30 days'"),
@@ -757,9 +588,9 @@ app.get('/api/admin/stats', adminMiddleware, async (req, res) => {
     totalUsdt:Number(tu2.rows[0].s), pending:Number(pe.rows[0].c),
     newToday:Number(nt.rows[0].c)
   });
-});
+}));
 
-app.get('/api/admin/users', adminMiddleware, async (req, res) => {
+app.get('/api/admin/users', adminMiddleware, wrap(async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 100, 100);
   const offset = Number(req.query.offset) || 0;
   const search = req.query.search ? `%${req.query.search}%` : null;
@@ -769,7 +600,6 @@ app.get('/api/admin/users', adminMiddleware, async (req, res) => {
   const whereClause = search
     ? `WHERE (u.username ILIKE $3 OR u.first_name ILIKE $3 OR CAST(u.tg_id AS TEXT) LIKE $3)`
     : '';
-
   const params = search ? [limit, offset, search] : [limit, offset];
 
   const result = await query(`
@@ -796,16 +626,16 @@ app.get('/api/admin/users', adminMiddleware, async (req, res) => {
     total: Number(total.rows[0].c),
     limit, offset
   });
-});
+}));
 
-app.post('/api/admin/block', adminMiddleware, async (req, res) => {
+app.post('/api/admin/block', adminMiddleware, wrap(async (req, res) => {
   const { tg_id, blocked } = req.body;
   await query('UPDATE users SET blocked=$1 WHERE tg_id=$2', [blocked?1:0, tg_id]);
   bot.sendMessage(tg_id, blocked ? '🚫 Ваш аккаунт заблокирован администратором.' : '✅ Ваш аккаунт разблокирован.').catch(()=>{});
   res.json({ success:true });
-});
+}));
 
-app.post('/api/admin/broadcast', adminMiddleware, async (req, res) => {
+app.post('/api/admin/broadcast', adminMiddleware, wrap(async (req, res) => {
   const { message } = req.body;
   if (!message || message.trim().length<2) return res.status(400).json({ error:'Пустое сообщение' });
   const users = await query("SELECT tg_id FROM users WHERE agreed=1 AND blocked=0");
@@ -816,12 +646,13 @@ app.post('/api/admin/broadcast', adminMiddleware, async (req, res) => {
     await new Promise(r => setTimeout(r, 50));
   }
   res.json({ success:true, sent, failed });
-});
+}));
 
-// POST /api/admin/broadcast-photo — broadcast with photo attachment
-app.post('/api/admin/broadcast-photo', adminMiddleware, upload.single('photo'), async (req, res) => {
+// POST /api/admin/broadcast-photo — рассылка с фото
+app.post('/api/admin/broadcast-photo', adminMiddleware, upload.single('photo'), wrap(async (req, res) => {
   const { message } = req.body;
   if (!req.file) return res.status(400).json({ error: 'Фото обязательно' });
+
   const users = await query("SELECT tg_id FROM users WHERE agreed=1 AND blocked=0");
   let sent = 0, failed = 0;
 
@@ -836,7 +667,10 @@ app.post('/api/admin/broadcast-photo', adminMiddleware, upload.single('photo'), 
     await new Promise(r => setTimeout(r, 50));
   }
   res.json({ success: true, sent, failed });
-});
+}));
+
+// Неизвестные /api-маршруты — JSON, а не страница приложения
+app.all('/api/*', (req, res) => res.status(404).json({ error: `Маршрут не найден: ${req.method} ${req.path}` }));
 
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
