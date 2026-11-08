@@ -13,6 +13,7 @@ const PORT = process.env.PORT || 3000;
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const MIN_RUB = 4000;
+const REFERRAL_PERCENT = 2; // реферальная наценка фиксирована: 2 % с каждой сделки приглашённого
 const TERMS_URL = 'https://telegra.ph/Eclipse-Exchange-05-23';
 const REQUIRE_AGREEMENT = false; // согласие теперь принимается в приложении (онбординг), в чате не требуется
 
@@ -73,6 +74,8 @@ async function initDB() {
   try { await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS asset TEXT DEFAULT 'USDT'`); } catch(e) {}
   try { await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS amount NUMERIC`); } catch(e) {}
   try { await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS agreed_at TIMESTAMPTZ`); } catch(e) {}
+  // единая реферальная наценка: приводим сохранённые значения к 2 %
+  try { await query(`UPDATE users SET ref_delta=$1, ref_delta_type='percent' WHERE ref_code IS NOT NULL`, [REFERRAL_PERCENT]); } catch(e) {}
   console.log('✅ Database ready');
 }
 
@@ -173,8 +176,8 @@ function applyReferralRate(baseRate, delta, deltaType, direction) {
 async function getEffectiveRate(user, baseRate, direction) {
   if (!user.referred_by) return { rate: baseRate, refTgId: null };
   const refUser = await getUser(user.referred_by);
-  if (!refUser || !refUser.ref_delta) return { rate: baseRate, refTgId: null };
-  const rate = applyReferralRate(baseRate, Number(refUser.ref_delta), refUser.ref_delta_type, direction);
+  if (!refUser || !refUser.ref_code) return { rate: baseRate, refTgId: null };
+  const rate = applyReferralRate(baseRate, REFERRAL_PERCENT, 'percent', direction);
   return { rate, refTgId: refUser.tg_id };
 }
 
@@ -409,11 +412,11 @@ app.get('/api/me', authMiddleware, wrap(async (req, res) => {
   let referral = null;
   if (user.referred_by) {
     const refUser = await getUser(user.referred_by);
-    if (refUser && refUser.ref_delta) {
+    if (refUser && refUser.ref_code) {
       referral = {
         referrer_name: refUser.username ? `@${refUser.username}` : (refUser.first_name || 'пользователь'),
-        delta: Number(refUser.ref_delta),
-        delta_type: refUser.ref_delta_type,
+        delta: REFERRAL_PERCENT,
+        delta_type: 'percent',
       };
     }
   }
@@ -434,10 +437,18 @@ app.get('/api/orders', authMiddleware, wrap(async (req, res) => {
   res.json(result.rows);
 }));
 
+// Реферальная ссылка создаётся автоматически; наценка фиксирована (REFERRAL_PERCENT)
+async function ensureRefCode(user) {
+  if (user.ref_code) return user.ref_code;
+  const code = await generateRefCode();
+  await query(`UPDATE users SET ref_code=$1, ref_delta=$2, ref_delta_type='percent' WHERE tg_id=$3`, [code, REFERRAL_PERCENT, user.tg_id]);
+  return code;
+}
+
 // GET /api/referral — ссылка и статистика текущего пользователя
 app.get('/api/referral', authMiddleware, wrap(async (req, res) => {
   const user = await upsertUser(req.tgUser);
-  if (!user.ref_code || !user.ref_delta) return res.json({ has_link: false });
+  const code = await ensureRefCode(user);
   const [countRes, earnRes] = await Promise.all([
     query('SELECT COUNT(*) as c FROM users WHERE referred_by=$1', [user.tg_id]),
     query('SELECT COALESCE(SUM(ref_earn_usdt),0) as s FROM orders WHERE ref_tg_id=$1', [user.tg_id]),
@@ -445,29 +456,20 @@ app.get('/api/referral', authMiddleware, wrap(async (req, res) => {
   const username = await getBotUsername();
   res.json({
     has_link: true,
-    link: refLink(username, user.ref_code),
-    delta: Number(user.ref_delta),
-    delta_type: user.ref_delta_type,
+    link: refLink(username, code),
+    delta: REFERRAL_PERCENT,
+    delta_type: 'percent',
     invited: Number(countRes.rows[0].c),
     earned: Number(earnRes.rows[0].s),
   });
 }));
 
-// POST /api/referral — создать или обновить комиссию
+// POST /api/referral — оставлен для совместимости со старой версией приложения: значения из запроса игнорируются
 app.post('/api/referral', authMiddleware, wrap(async (req, res) => {
   const user = await upsertUser(req.tgUser);
-  const { delta, delta_type } = req.body;
-  const type = delta_type === 'percent' ? 'percent' : 'rub';
-  const value = Number(delta);
-  if (!value || value <= 0 || (type === 'percent' && value >= 100)) {
-    return res.status(400).json({ error: type === 'percent' ? 'Введите число от 0 до 100' : 'Введите положительное число' });
-  }
-  let refCode = user.ref_code;
-  if (!refCode) refCode = await generateRefCode();
-  await query('UPDATE users SET ref_code=$1, ref_delta=$2, ref_delta_type=$3 WHERE tg_id=$4',
-    [refCode, value, type, user.tg_id]);
+  const code = await ensureRefCode(user);
   const username = await getBotUsername();
-  res.json({ success: true, link: refLink(username, refCode), delta: value, delta_type: type });
+  res.json({ success: true, link: refLink(username, code), delta: REFERRAL_PERCENT, delta_type: 'percent' });
 }));
 
 // POST /api/deposit/fiat — SIM deposit
