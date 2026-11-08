@@ -460,7 +460,7 @@
   .onb-link { display: block; margin: 8px 0 0; font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: underline; cursor: pointer; }
   .onb-foot, .x-actions { display: flex; gap: 10px; align-items: center; padding-top: 12px; }
   .x-actions { padding: 16px 20px 0; } .onb-foot .cta-btn, .x-actions .cta-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
-  .btn-ghost { width: 56px; height: 56px; border-radius: 50%; background: var(--bg2); border: 1px solid var(--border2); color: var(--text); font-size: 22px; cursor: pointer; flex-shrink: 0; font-family: inherit; }
+  .btn-ghost { display: flex; align-items: center; justify-content: center; padding: 0; line-height: 0; width: 56px; height: 56px; border-radius: 50%; background: var(--bg2); border: 1px solid var(--border2); color: var(--text); font-size: 22px; cursor: pointer; flex-shrink: 0; font-family: inherit; }
   .cta-btn:disabled { opacity: 0.45; }
   .chan-card, .status-card, .rate-card, .timer-card { margin: 12px 20px 0; border-radius: 22px; }
   .chan-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--bg2); border: 1px solid var(--border2); color: var(--text); cursor: pointer; }
@@ -564,7 +564,7 @@
         <div class="form-group"><label class="form-label">Реквизиты (номер карты / телефон СБП)</label><input class="form-input" type="text" id="x-req" placeholder="Номер карты или телефон"></div>
         <div class="form-group" style="margin-bottom:0"><label class="form-label">Банк</label><input class="form-input" type="text" id="x-bank" placeholder="Например, Сбербанк"></div>
       </div>
-      <div class="x-actions"><button class="btn-ghost" onclick="xGo(1)">←</button><button class="cta-btn" onclick="xNext2()">Далее: проверка <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+      <div class="x-actions"><button class="btn-ghost" onclick="xGo(1)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><button class="cta-btn" onclick="xNext2()">Далее: проверка <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
     </div>
 
     <div id="xs-3" style="display:none">
@@ -573,7 +573,7 @@
         <div class="form-group"><label class="form-label">Ссылка на чек (xRocket / Crypto Bot)</label><input class="form-input" type="url" id="x-check" placeholder="https://t.me/xRocket?start=..."></div>
         <div id="x-sum"></div>
       </div>
-      <div class="x-actions"><button class="btn-ghost" onclick="xGo(2)">←</button><button class="cta-btn" id="x-submit" onclick="submitExchange()">Отправить заявку</button></div>
+      <div class="x-actions"><button class="btn-ghost" onclick="xGo(2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><button class="cta-btn" id="x-submit" onclick="submitExchange()">Отправить заявку</button></div>
     </div>
   </div>
 
@@ -901,7 +901,7 @@
       </div>
     </div>
   </div>
-  <div class="onb-foot"><button class="btn-ghost" id="onb-back" onclick="onbGo(onbIdx-1)" style="visibility:hidden">←</button><button class="cta-btn" id="onb-next" onclick="onbNext()"><span id="onb-next-label">Продолжить</span> <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+  <div class="onb-foot"><button class="btn-ghost" id="onb-back" onclick="onbGo(onbIdx-1)" style="visibility:hidden"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><button class="cta-btn" id="onb-next" onclick="onbNext()"><span id="onb-next-label">Продолжить</span> <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
 </div></div>
 
 <div class="doc-sheet" id="doc-sheet" style="display:none" onclick="if(event.target===this)closeDoc()"><div class="doc-box">
@@ -938,7 +938,9 @@
     };
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(path, opts);
-    const data = await res.json();
+    let data;
+    try { data = await res.json(); }
+    catch (e) { throw new Error(`Сервер не ответил на ${method} ${path} (HTTP ${res.status}). Возможно, на сервере не обновлён файл src/quotes.js`); }
     if (!res.ok) { const err = new Error(data.error || 'Server error'); err.code = data.code; throw err; }
     return data;
   }
