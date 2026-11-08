@@ -506,6 +506,10 @@
   .ch-chg { font-size: 13px; color: var(--text3); margin-top: 2px; } .ch-chg.up { color: var(--accent2); } .ch-chg.down { color: var(--red); }
   .ch-axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-top: 6px; gap: 6px; }
   .chart-card .seg { background: var(--bg4); } .chart-card .seg button { color: var(--text2); padding: 7px 12px; font-size: 13px; } .chart-card .seg button.on { background: var(--bg); color: var(--text); }
+  .dd-title { font-size: 19px; font-weight: 600; padding: 0 20px; margin: 28px 0 14px; }
+  .export-btn { width: 100%; height: 56px; border-radius: 999px; background: var(--bg2); border: 1px solid var(--border2); color: var(--text); font-size: 16px; font-weight: 600; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
+  .export-btn:disabled { opacity: 0.5; }
+  .doc-row { padding: 18px 2px; border-top: 1px solid var(--border); font-size: 16px; cursor: pointer; } .export-btn + .doc-row { margin-top: 12px; }
 </style>
 </head>
 <body class="onb-open">
@@ -710,6 +714,13 @@
         <label class="switch"><input type="checkbox" data-setting="glass"><span></span></label></div>
       <div class="setting-row"><div><div class="setting-title">Тактильный отклик</div><div class="setting-sub">На поддерживаемых устройствах</div></div>
         <label class="switch"><input type="checkbox" data-setting="haptic"><span></span></label></div>
+    </div>
+    <div class="dd-title">Ваши данные и документы</div>
+    <div style="padding:0 20px">
+      <button class="export-btn" id="export-btn" onclick="exportData()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>Экспорт моих данных</span></button>
+      <div class="doc-row" onclick="openDoc('terms')">Условия обмена</div>
+      <div class="doc-row" onclick="openDoc('privacy')">Конфиденциальность</div>
+      <div class="doc-row" onclick="openDoc('pd')">Обработка персональных данных</div>
     </div>
   </div>
 
@@ -1230,6 +1241,14 @@
       switchPage('deals');
     } catch (e) { await handleApiError(e); }
     finally { btn.disabled = false; btn.textContent = 'Отправить заявку'; }
+  }
+
+  // ── Export of user data (file arrives in the chat with the bot) ─────────────
+  async function exportData() {
+    const btn = $('export-btn'); btn.disabled = true;
+    try { await api('POST', '/api/export', {}); showToast('Файл отправлен вам в чат с ботом', 'success'); }
+    catch (e) { showToast(e.message, 'error'); }
+    finally { btn.disabled = false; }
   }
 
   // ── Rate chart ──────────────────────────────────────────────────────────────
