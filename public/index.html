@@ -494,6 +494,18 @@
   .doc-head button { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border2); background: var(--bg3); color: var(--text); cursor: pointer; font-size: 16px; }
   .doc-body { overflow-y: auto; flex: 1; font-size: 14px; line-height: 1.6; color: var(--text2); padding-bottom: 14px; }
   .doc-body p { margin: 0 0 12px; }
+  .news-card { margin: 12px 20px 0; padding: 18px; border-radius: 24px; background: linear-gradient(145deg, rgba(var(--accent-rgb),0.16), var(--bg2) 70%); border: 1px solid var(--border2); }
+  .news-top { display: flex; align-items: center; gap: 12px; } .news-tag { font-size: 17px; color: var(--text2); }
+  .news-ico { width: 44px; height: 44px; border-radius: 14px; background: var(--accent-solid); color: #fff; display: flex; align-items: center; justify-content: center; }
+  .news-title { font-size: 22px; font-weight: 700; margin-top: 14px; letter-spacing: -0.01em; }
+  .news-desc { font-size: 15px; color: var(--text2); margin-top: 8px; line-height: 1.45; }
+  .news-btn { width: 100%; height: 52px; margin-top: 16px; border-radius: 999px; border: none; background: var(--accent-solid); color: #fff; font-size: 16px; font-weight: 600; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
+  .chart-card { margin: 0 20px; padding: 16px; border-radius: 22px; background: var(--bg2); border: 1px solid var(--border2); }
+  .ch-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .ch-head { font-size: 13px; color: var(--text3); } .ch-val { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 600; margin-top: 4px; }
+  .ch-chg { font-size: 13px; color: var(--text3); margin-top: 2px; } .ch-chg.up { color: var(--accent2); } .ch-chg.down { color: var(--red); }
+  .ch-axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-top: 6px; gap: 6px; }
+  .chart-card .seg { background: var(--bg4); } .chart-card .seg button { color: var(--text2); padding: 7px 12px; font-size: 13px; } .chart-card .seg button.on { background: var(--bg); color: var(--text); }
 </style>
 </head>
 <body class="onb-open">
@@ -504,11 +516,12 @@
 
   <!-- ── HOME PAGE ── -->
   <div class="page active" id="page-home">
-    <a class="chan-card" id="chan-card" style="display:none" onclick="openChannel()">
-      <span class="chan-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4 3 11l6 2.5L11.5 20l3-4.5L19 18z"/></svg></span>
-      <div style="flex:1;min-width:0"><div class="chan-title" id="chan-title">Наш Telegram-канал</div><div class="chan-desc" id="chan-desc"></div></div>
-      <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-    </a>
+    <div class="news-card">
+      <div class="news-top"><span class="news-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4 3 11l6 2.5L11.5 20l3-4.5L19 18z"/></svg></span><span class="news-tag">News</span></div>
+      <div class="news-title">Будь в курсе обновлений</div>
+      <div class="news-desc">Новые функции, изменения курса и важные объявления — первыми в нашем канале.</div>
+      <button class="news-btn" onclick="openLink('https://t.me/eclipseRuNews')"><span>Перейти в канал</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></button>
+    </div>
     <div class="status-card" id="status-card">
       <span class="st-ico" id="st-icon"></span>
       <div><div class="st-title" id="st-title">Приём заявок</div><div class="st-sub" id="st-sub">Загрузка…</div><div class="st-ops" id="st-ops"></div></div>
@@ -521,6 +534,38 @@
       <button class="rc-btn" id="rc-btn" onclick="openExchange(homeAsset)"><span id="rc-btn-label">Обменять на рубли</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
     </div>
     <div id="referral-note" style="display:none;margin:12px 20px 0;padding:10px 12px;border-radius:12px;background:var(--accent-dim2);border:0.5px solid var(--accent);font-size:12px;line-height:1.5"></div>
+    <div class="section-header" style="padding-top:22px">Дополнительные возможности</div>
+    <div class="actions">
+      <div class="action-item" onclick="openModal('modal-sim')">
+        <div class="action-icon gray">
+          <svg viewBox="0 0 20 20" fill="none" stroke="var(--text2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="10" height="16" rx="2"/><path d="M8 15h4"/></svg>
+        </div>
+        <div class="action-text">
+          <div class="action-title">Пополнение SIM</div>
+          <div class="action-sub">Курс <span data-rate="sim">—</span> ₽/USDT · Баланс телефона</div>
+        </div>
+        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
+      </div>
+      <div class="action-item" onclick="openModal('modal-qr')">
+        <div class="action-icon gray">
+          <svg viewBox="0 0 20 20" fill="none" stroke="var(--text2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM13 13h4M15 11v4M17 11h-2"/></svg>
+        </div>
+        <div class="action-text">
+          <div class="action-title">Оплата QR</div>
+          <div class="action-sub">Курс <span data-rate="sim">—</span> ₽/USDT · Прикрепите QR-код</div>
+        </div>
+        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
+      </div>
+    </div>
+
+    <div class="section-header" style="padding-top:22px">Динамика курса</div>
+    <div class="chart-card">
+      <div class="ch-top"><div><div class="ch-head" id="ch-head">Курс USDT → ₽</div><div class="ch-val" id="ch-val">—</div><div class="ch-chg" id="ch-chg"></div></div>
+        <div class="seg"><button id="cr-24h" class="on" onclick="setChartRange('24h')">24 ч</button><button id="cr-7d" onclick="setChartRange('7d')">7 дн</button></div></div>
+      <svg id="ch-svg" viewBox="0 0 320 130" style="width:100%;height:auto;display:block;margin-top:10px"></svg>
+      <div class="ch-axis"><span id="ch-t0"></span><span id="ch-mm"></span><span id="ch-t1"></span></div>
+    </div>
+
   </div>
 
   <!-- ── EXCHANGE PAGE ── -->
@@ -651,26 +696,6 @@
         </div>
         <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
-      <div class="action-item" onclick="openModal('modal-sim')">
-        <div class="action-icon gray">
-          <svg viewBox="0 0 20 20" fill="none" stroke="var(--text2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="10" height="16" rx="2"/><path d="M8 15h4"/></svg>
-        </div>
-        <div class="action-text">
-          <div class="action-title">Пополнение SIM</div>
-          <div class="action-sub">Курс 60 ₽/USDT · Баланс телефона</div>
-        </div>
-        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      </div>
-      <div class="action-item" onclick="openModal('modal-qr')">
-        <div class="action-icon gray">
-          <svg viewBox="0 0 20 20" fill="none" stroke="var(--text2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM13 13h4M15 11v4M17 11h-2"/></svg>
-        </div>
-        <div class="action-text">
-          <div class="action-title">Оплата QR</div>
-          <div class="action-sub">Курс 60 ₽/USDT · Прикрепите QR-код</div>
-        </div>
-        <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      </div>
     </div>
 
     <div class="section-header">Оформление и приватность</div>
@@ -740,7 +765,7 @@
     <div class="modal-body">
       <div class="info-box" style="margin-bottom:14px">
         Пополнение баланса телефона.<br>
-        Курс: <strong>1 USDT = 60 ₽</strong>
+        Курс: <strong>1 USDT = <span data-rate="sim">—</span> ₽</strong>
       </div>
       <div class="form-group">
         <label class="form-label">Сумма пополнения в рублях</label>
@@ -779,7 +804,7 @@
     <div class="modal-body">
       <div class="info-box" style="margin-bottom:14px">
         Оплата через <strong>QR-код</strong>.<br>
-        Курс: <strong>1 USDT = 60 ₽</strong>
+        Курс: <strong>1 USDT = <span data-rate="sim">—</span> ₽</strong>
       </div>
       <div class="form-group">
         <label class="form-label">Сумма пополнения в рублях</label>
@@ -1089,12 +1114,13 @@
     $('rc-rate').innerHTML = r ? fmtMoney(r) + '<span>₽</span>' : '—';
     $('rc-upd').textContent = !quote ? '—' : (homeAsset === 'TON' && !TON_USDT) ? 'Курс TON временно недоступен'
       : 'Обновлён в ' + new Date(quote.updated_at).toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit' }) + ' МСК';
+    document.querySelectorAll('[data-rate="sim"]').forEach(e => e.textContent = fmtMoney(simRate()));
     $('hc-sub').textContent = `курс ниже на ${+(HC_DISCOUNT * 100).toFixed(2)} %, выплата от ${HC_MIN_RUB.toLocaleString('ru-RU')} ₽, заявка в приоритете у операторов`;
     const note = $('referral-note');
     if (myReferral) { note.innerHTML = refNoteText(); note.style.display = 'block'; } else note.style.display = 'none';
-    xRecalc();
+    xRecalc(); updateSimCalc(); updateQrCalc();
   }
-  function setHomeAsset(a) { homeAsset = a; $('hs-USDT').classList.toggle('on', a === 'USDT'); $('hs-TON').classList.toggle('on', a === 'TON'); renderRates(); haptic(); }
+  function setHomeAsset(a) { homeAsset = a; $('hs-USDT').classList.toggle('on', a === 'USDT'); $('hs-TON').classList.toggle('on', a === 'TON'); renderRates(); renderChart(); haptic(); }
 
   async function handleApiError(e) {
     if (e.code === 'QUOTE_EXPIRED') await loadQuote(true);
@@ -1117,7 +1143,6 @@
     $('st-ops').textContent = open ? 'Операторов на смене: ' + appStatus.operators : 'Следите за новостями в канале';
     $('status-card').classList.toggle('closed', !open);
     $('rc-btn').disabled = !open; $('rc-btn-label').textContent = open ? 'Обменять на рубли' : 'Приём заявок закрыт';
-    if (cfg.channel_url) { $('chan-card').style.display = 'flex'; $('chan-title').textContent = cfg.channel_title; $('chan-desc').textContent = cfg.channel_desc; }
     xRecalc();
   }
   function openLink(u) {
@@ -1207,6 +1232,41 @@
     finally { btn.disabled = false; btn.textContent = 'Отправить заявку'; }
   }
 
+  // ── Rate chart ──────────────────────────────────────────────────────────────
+  let chartRange = '24h', chartData = null;
+  async function loadChart() {
+    try { chartData = await api('GET', '/api/rate-history?range=' + chartRange); renderChart(); }
+    catch (e) { console.warn('Chart error:', e.message); }
+  }
+  function setChartRange(r) { chartRange = r; $('cr-24h').classList.toggle('on', r === '24h'); $('cr-7d').classList.toggle('on', r === '7d'); loadChart(); }
+  function renderChart() {
+    $('ch-head').textContent = 'Курс ' + homeAsset + ' → ₽';
+    const pts = ((chartData && chartData.points) || []).map(p => ({ t: new Date(p.t).getTime(), v: homeAsset === 'TON' ? p.ton : p.usdt })).filter(p => Number.isFinite(p.v) && p.v > 0);
+    const svg = $('ch-svg'), chg = $('ch-chg');
+    if (pts.length < 2) {
+      svg.innerHTML = ''; $('ch-val').textContent = pts.length ? fmtMoney(pts[0].v) + ' ₽' : '—';
+      chg.textContent = 'Данные накапливаются'; chg.className = 'ch-chg'; $('ch-t0').textContent = $('ch-t1').textContent = $('ch-mm').textContent = ''; return;
+    }
+    const W = 320, H = 130, pad = 8, vs = pts.map(p => p.v);
+    let min = Math.min(...vs), max = Math.max(...vs); const lo = min, hi = max;
+    if (max - min < 0.01) { min -= 0.5; max += 0.5; }
+    const t0 = pts[0].t, t1 = pts[pts.length - 1].t;
+    const x = t => pad + (t - t0) / (t1 - t0) * (W - 2 * pad), y = v => H - pad - (v - min) / (max - min) * (H - 2 * pad - 10);
+    const line = pts.map((p, i) => (i ? 'L' : 'M') + x(p.t).toFixed(1) + ' ' + y(p.v).toFixed(1)).join(' ');
+    const last = pts[pts.length - 1], first = pts[0], diff = last.v - first.v, pct = diff / first.v * 100;
+    svg.innerHTML = `<defs><linearGradient id="chg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity="0.35"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>` +
+      `<path d="${line} L${x(t1).toFixed(1)} ${H} L${x(t0).toFixed(1)} ${H} Z" fill="url(#chg)"/>` +
+      `<path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` +
+      `<circle cx="${x(last.t).toFixed(1)}" cy="${y(last.v).toFixed(1)}" r="3.5" fill="var(--accent)"/>`;
+    $('ch-val').textContent = fmtMoney(last.v) + ' ₽';
+    const sign = diff >= 0 ? '+' : '−';
+    chg.textContent = `${sign}${Math.abs(diff).toFixed(2).replace('.', ',')} ₽ (${sign}${Math.abs(pct).toFixed(2).replace('.', ',')} %) за ${chartRange === '24h' ? '24 ч' : '7 дн'}`;
+    chg.className = 'ch-chg ' + (diff >= 0 ? 'up' : 'down');
+    const fmt = t => new Date(t).toLocaleString('ru-RU', chartRange === '24h' ? { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit' } : { timeZone: 'Europe/Moscow', day: '2-digit', month: '2-digit' });
+    $('ch-t0').textContent = fmt(t0); $('ch-t1').textContent = 'сейчас';
+    $('ch-mm').textContent = `мин ${fmtMoney(lo)} · макс ${fmtMoney(hi)}`;
+  }
+
   // ── Onboarding ──────────────────────────────────────────────────────────────
   function hideOnb() { $('onb').style.display = 'none'; document.body.classList.remove('onb-open'); }
   function showOnboarding(i) { document.body.classList.add('onb-open'); $('onb').style.display = 'flex'; $('onb').classList.add('ready'); onbGo(i || 0); }
@@ -1264,7 +1324,9 @@
   }
 
   // ── Deposit tabs ────────────────────────────────────────────────────────────
-  const SIM_RATE = 60; // 1 USDT = 65 RUB for SIM/QR
+  const SIM_DISCOUNT = 10; // курс SIM/QR = основной курс продажи минус 10 ₽
+  const simRate = () => RATE_SELL ? Math.max(0, RATE_SELL - SIM_DISCOUNT) : 0;
+  const simUsdt = rub => simRate() ? rub / simRate() : 0;
   let selectedOperator = 'tele2';
   let simMethod = 'sbp';
   let qrFileBase64 = null;
@@ -1300,14 +1362,14 @@
       .split(',').map(p => p.trim()).filter(Boolean);
     const count = phones.length || 0;
     const totalRub = rub * (count || 1);
-    const usdt = totalRub / SIM_RATE;
+    const usdt = simUsdt(totalRub);
     document.getElementById('sim-total-usdt').textContent = usdt > 0 ? usdt.toFixed(2) + '$' : '0$';
     document.getElementById('sim-summary-count').textContent = count || 0;
   }
 
   function updateQrCalc() {
     const rub = parseFloat(document.getElementById('qr-rub').value) || 0;
-    const usdt = rub / SIM_RATE;
+    const usdt = simUsdt(rub);
     document.getElementById('qr-total-usdt').textContent = usdt > 0 ? usdt.toFixed(2) + '$' : '0$';
   }
 
@@ -1353,7 +1415,7 @@
 
       const phoneList = phones.split(',').map(p => p.trim()).filter(Boolean);
       const totalRub = rub * (phoneList.length || 1);
-      const usdt = totalRub / SIM_RATE;
+      const usdt = simUsdt(totalRub);
 
       const btn = document.getElementById('sim-submit-btn');
       btn.disabled = true; btn.textContent = 'Отправка...';
@@ -1382,7 +1444,7 @@
       if (!rub || rub <= 0) { showToast('Укажите сумму', 'error'); return; }
       if (!qrFileBase64) { showToast('Прикрепите QR-код', 'error'); return; }
       if (!checkUrl) { showToast('Вставьте ссылку на чек', 'error'); return; }
-      const usdt = rub / SIM_RATE;
+      const usdt = simUsdt(rub);
 
       const btn = document.getElementById('qr-submit-btn');
       btn.disabled = true; btn.textContent = 'Отправка...';
@@ -1609,6 +1671,8 @@
   loadUser();
   loadStatus();
   loadQuote(true);
+  loadChart();
+  setInterval(loadChart, 5 * 60 * 1000);
   setInterval(tickQuote, 1000);
 
   // Fetch/refresh avatar without needing /start
