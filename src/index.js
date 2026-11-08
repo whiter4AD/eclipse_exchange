@@ -5,6 +5,7 @@ const cors = require('cors');
 const crypto = require('crypto');
 const path = require('path');
 const multer = require('multer');
+const quotes = require('./quotes');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -230,7 +231,7 @@ bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
       ]}}
     );
   }
-  sendMainMenu(msg.chat.id, msg.from.first_name);
+  sendMainMenu(msg.chat.id, user);
 });
 
 bot.onText(/\/admin/, async (msg) => {
@@ -247,13 +248,13 @@ bot.onText(/\/stats/, async (msg) => {
   await sendStats(msg.chat.id);
 });
 
-function sendMainMenu(chatId, firstName) {
-  bot.sendMessage(chatId,
-    `🌑 *Eclipse Exchange*\n\nОбмен USDT и TON на рубли.\n\n💱 Курс фиксируется на 10 минут\n📊 Комиссия уже внутри курса`,
-    { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[
-      { text: '🌑 Открыть обменник', web_app: { url: webAppUrl() } }
-    ]]}}
-  );
+async function sendMainMenu(chatId, user) {
+  let text = '*Eclipse Exchange* — обмен USDT и TON на рубли';
+  try { text = quotes.greetingText(await quotes.getGreetingData(query, bot, user, getEffectiveRate)); }
+  catch (e) { console.warn('Greeting error:', e.message); }
+  bot.sendMessage(chatId, text, { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[
+    { text: '🌑 Открыть обменник', web_app: { url: webAppUrl() } }
+  ]]}});
 }
 
 async function sendStats(chatId) {
@@ -311,7 +312,7 @@ bot.on('callback_query', async (query_cb) => {
       await bot.answerCallbackQuery(query_cb.id, { text: '✅ Соглашение принято!' });
       await bot.editMessageText('✅ Соглашение принято! Теперь вы можете пользоваться сервисом.',
         { chat_id: query_cb.message.chat.id, message_id: query_cb.message.message_id }).catch(()=>{});
-      return sendMainMenu(tgId, query_cb.from.first_name);
+      return sendMainMenu(tgId, (await getUser(tgId)) || { tg_id: tgId });
     }
 
     if (data.startsWith('done_') || data.startsWith('cancel_')) {
@@ -390,7 +391,7 @@ async function adminMiddleware(req, res, next) {
 }
 
 // Динамический курс, продажа USDT/TON с чеком, статус приёма, согласие, High-check
-require('./quotes').register({ app, query, authMiddleware, adminMiddleware, upsertUser, getEffectiveRate, notifyManager, formatMsk, bot, MIN_RUB });
+quotes.register({ app, query, authMiddleware, adminMiddleware, upsertUser, getEffectiveRate, notifyManager, formatMsk, bot, MIN_RUB });
 
 // Обёртка: ошибки в async-роутах не должны ронять процесс
 const wrap = fn => (req, res) => fn(req, res).catch(e => {
