@@ -385,6 +385,32 @@ async function getGreetingData(query, bot, user, getEffectiveRate) {
   return { open: st.open, operators: st.operators, usdt, ton };
 }
 
+// Кастомные эмодзи (ID можно переопределить переменной EMOJI_<ИМЯ>, пустое значение отключает одно, CUSTOM_EMOJI=off — все)
+const EMOJI_IDS = { title: '5893365462837760511', open: '5447464938874348535', closed: '5246821534437221767', usdt: '5893473283696759404',
+  ton: '5260681660189408650', payout: '5893450623449305489', operators: '5902335789798265487', admin: '5445033158456145975' };
+const EMOJI_FALLBACK = { title: '🌑', open: '🟢', closed: '🔴', usdt: '💵', ton: '💎', payout: '✈️', operators: '👤', admin: '🛡' };
+function emojiId(key) {
+  if ((process.env.CUSTOM_EMOJI || '').toLowerCase() === 'off') return null;
+  const env = process.env['EMOJI_' + key.toUpperCase()];
+  const id = env !== undefined ? env.trim() : EMOJI_IDS[key];
+  return /^\d+$/.test(id || '') ? id : null;
+}
+const customEmojiEnabled = () => Object.keys(EMOJI_IDS).some(k => emojiId(k));
+const ce = key => { const id = emojiId(key); return id ? `<tg-emoji emoji-id="${id}">${EMOJI_FALLBACK[key]}</tg-emoji> ` : ''; };
+const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// То же приветствие в HTML-режиме — с кастомными эмодзи
+function greetingHtml(d) {
+  const L = [`${ce('title')}<b>Eclipse Exchange</b> — обмен USDT и TON на рубли`, ''];
+  L.push(d.open ? `${ce('open')}<b>Приём заявок открыт</b> — можно обменивать прямо сейчас` : `${ce('closed')}<b>Приём заявок закрыт</b> — заявки временно не принимаются`, '');
+  if (d.usdt) L.push(`${ce('usdt')}USDT: ${fmtRub(d.usdt)}`);
+  if (d.ton) L.push(`${ce('ton')}TON: ${fmtRub(d.ton)}`);
+  if (d.usdt || d.ton) L.push('');
+  L.push(`${ce('payout')}Рубли на карту или по СБП, обычно за ${esc(process.env.PAYOUT_ETA || '15–30 минут')}`);
+  if (d.open) L.push('', `${ce('operators')}Операторов на смене: ${d.operators}`);
+  return L.join('\n');
+}
+
 function greetingText(d) {
   const L = ['*Eclipse Exchange* — обмен USDT и TON на рубли', ''];
   L.push(d.open ? '*Приём заявок открыт* — можно обменивать прямо сейчас' : '*Приём заявок закрыт* — заявки временно не принимаются', '');
@@ -396,4 +422,4 @@ function greetingText(d) {
   return L.join('\n');
 }
 
-module.exports = { register, getGreetingData, greetingText, _test: { median, round2, CHECK_RE } };
+module.exports = { register, getGreetingData, greetingText, greetingHtml, emojiId, customEmojiEnabled, _test: { median, round2, CHECK_RE } };
