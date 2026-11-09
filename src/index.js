@@ -236,11 +236,16 @@ bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
 
 bot.onText(/\/admin/, async (msg) => {
   if (!isAdmin(msg.from.id)) return;
-  bot.sendMessage(msg.chat.id, '🛡 Админ-панель:', {
-    reply_markup: { inline_keyboard: [[
-      { text: '🛡 Открыть панель', web_app: { url: webAppUrl() + '/admin.html' } }
-    ]]}
-  });
+  const panelUrl = webAppUrl() + '/admin.html';
+  const id = quotes.emojiId('admin');
+  if (id) {
+    try {
+      const r = await bot.sendMessage(msg.chat.id, `<tg-emoji emoji-id="${id}">🛡</tg-emoji> Админ-панель:`, { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[
+        { text: 'Открыть панель', icon_custom_emoji_id: id, web_app: { url: panelUrl } } ]] } });
+      if (r) return;
+    } catch (e) { console.warn('[admin] вариант с кастомным эмодзи не отправился:', e.message); }
+  }
+  bot.sendMessage(msg.chat.id, '🛡 Админ-панель:', { reply_markup: { inline_keyboard: [[ { text: '🛡 Открыть панель', web_app: { url: panelUrl } } ]] } });
 });
 
 bot.onText(/\/stats/, async (msg) => {
@@ -249,12 +254,22 @@ bot.onText(/\/stats/, async (msg) => {
 });
 
 async function sendMainMenu(chatId, user) {
-  let text = '*Eclipse Exchange* — обмен USDT и TON на рубли';
-  try { text = quotes.greetingText(await quotes.getGreetingData(query, bot, user, getEffectiveRate)); }
+  const kb = { reply_markup: { inline_keyboard: [[ { text: '🌑 Открыть обменник', web_app: { url: webAppUrl() } } ]] } };
+  let d = null;
+  try { d = await quotes.getGreetingData(query, bot, user, getEffectiveRate); }
   catch (e) { console.warn('Greeting error:', e.message); }
-  bot.sendMessage(chatId, text, { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[
-    { text: '🌑 Открыть обменник', web_app: { url: webAppUrl() } }
-  ]]}});
+  // Вариант с кастомными эмодзи (HTML). Если Telegram его не принял — отправляем обычный текст
+  if (d && quotes.customEmojiEnabled()) {
+    try {
+      const r = await bot.sendMessage(chatId, quotes.greetingHtml(d), { parse_mode: 'HTML', ...kb });
+      if (r) {
+        if (!(r.entities || []).some(en => en.type === 'custom_emoji'))
+          console.warn('[greeting] Telegram не применил кастомные эмодзи — у бота нет на них права (нужен доп. юзернейм на Fragment или Premium у владельца). Отключить: CUSTOM_EMOJI=off');
+        return;
+      }
+    } catch (e) { console.warn('[greeting] вариант с кастомными эмодзи не отправился:', e.message); }
+  }
+  bot.sendMessage(chatId, d ? quotes.greetingText(d) : '*Eclipse Exchange* — обмен USDT и TON на рубли', { parse_mode: 'Markdown', ...kb });
 }
 
 async function sendStats(chatId) {
