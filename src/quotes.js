@@ -189,6 +189,8 @@ async function recordRate(query, bot) {
   } catch (e) { console.warn('[rates] history:', e.message); }
 }
 
+const formatMskTime = ts => ts ? new Date(ts).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' МСК' : '—';
+
 function register(d) {
   const { app, query, authMiddleware, adminMiddleware, upsertUser, getEffectiveRate, notifyManager, formatMsk, bot, MIN_RUB } = d;
   if (!historyStarted) {   // точка истории каждые 5 минут, независимо от посещаемости
@@ -252,11 +254,8 @@ function register(d) {
     const order = r.rows[0];
     if (refTgId && refEarnUsdt > 0) await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [refEarnUsdt, refTgId]);
     if (process.env.MANAGER_CHAT_ID) {
-      const tag = user.username ? `@${user.username}` : `#${user.tg_id}`;
-      const text = `${hc ? '⭐ HIGH-CHECK · приоритет\n\n' : ''}🔄 Продажа ${asset} → ₽\n\n👤 ${tag} (${user.first_name || ''})\n🆔 Заявка: #${order.id}\n` +
-        `💵 Отдаёт: ${amount} ${asset}${asset === 'TON' ? ` (≈ ${usdtEq.toFixed(2)} USDT)` : ''}\n💴 Получает: ${Math.round(rub).toLocaleString('ru-RU')} ₽ (курс ${rate.toFixed(2)})\n` +
-        `🏦 Реквизиты: ${requisites.trim()}\n🔗 Чек: ${check_url.trim()}\n⏰ ${formatMsk(order.created_at)}`;
-      bot.sendMessage(process.env.MANAGER_CHAT_ID, text, { reply_markup: { inline_keyboard: [[
+      const t = managerOrderTexts({ hc, asset, user, order, amount, usdtEq, rub, rate, requisites: requisites.trim(), check: check_url.trim() });
+      sendRich(bot, process.env.MANAGER_CHAT_ID, t.html, t.plain, { reply_markup: { inline_keyboard: [[
         { text: '✅ Выполнено', callback_data: `done_${order.id}` }, { text: '❌ Отклонить', callback_data: `cancel_${order.id}` }]] } })
         .catch(e => console.error('Exchange notify error:', e.message));
     }
@@ -387,8 +386,11 @@ async function getGreetingData(query, bot, user, getEffectiveRate) {
 
 // Кастомные эмодзи (ID можно переопределить переменной EMOJI_<ИМЯ>, пустое значение отключает одно, CUSTOM_EMOJI=off — все)
 const EMOJI_IDS = { title: '5893365462837760511', open: '5447464938874348535', closed: '5246821534437221767', usdt: '5893473283696759404',
-  ton: '5260681660189408650', payout: '5893450623449305489', operators: '5902335789798265487', admin: '5445033158456145975' };
-const EMOJI_FALLBACK = { title: '🌑', open: '🟢', closed: '🔴', usdt: '💵', ton: '💎', payout: '✈️', operators: '👤', admin: '🛡' };
+  ton: '5260681660189408650', payout: '5893450623449305489', operators: '5902335789798265487', admin: '5445033158456145975',
+  user: '5902335789798265487', give: '5406920593629024429', get: '5406730197728790719', requisites: '5902056028513505203',
+  check: '5444961234933806330', time: '5902050947567194830', done: '5447464938874348535', rejected: '5246821534437221767' };
+const EMOJI_FALLBACK = { title: '🌑', open: '🟢', closed: '🔴', usdt: '💵', ton: '💎', payout: '✈️', operators: '👤', admin: '🛡',
+  user: '👤', give: '💵', get: '💴', requisites: '🏦', check: '🔗', time: '⏰', done: '✅', rejected: '❌' };
 function emojiId(key) {
   if ((process.env.CUSTOM_EMOJI || '').toLowerCase() === 'off') return null;
   const env = process.env['EMOJI_' + key.toUpperCase()];
@@ -411,6 +413,63 @@ function greetingHtml(d) {
   return L.join('\n');
 }
 
+// Отправка с кастомными эмодзи (HTML); если Telegram не принял — обычный текст
+async function sendRich(bot, chatId, html, plain, opts = {}) {
+  if (customEmojiEnabled()) {
+    try { const r = await bot.sendMessage(chatId, html, { ...opts, parse_mode: 'HTML' }); if (r) return r; }
+    catch (e) { console.warn('[emoji] вариант с кастомными эмодзи не отправился:', e.message); }
+  }
+  return bot.sendMessage(chatId, plain, opts);
+}
+
+// Текст сообщения → HTML с сохранением кастомных эмодзи (offset/length у Telegram — в UTF-16, как и строки JS)
+function messageToHtml(m) {
+  const text = m.text || m.caption || '';
+  const ents = (m.entities || m.caption_entities || []).filter(e => e.type === 'custom_emoji').sort((a, b) => a.offset - b.offset);
+  let out = '', pos = 0;
+  for (const e of ents) {
+    out += esc(text.slice(pos, e.offset)) + `<tg-emoji emoji-id="${e.custom_emoji_id}">${esc(text.slice(e.offset, e.offset + e.length))}</tg-emoji>`;
+    pos = e.offset + e.length;
+  }
+  return out + esc(text.slice(pos));
+}
+
+// Дописывает статус к сообщению менеджера, не теряя кастомные эмодзи (для фото-заявок правится подпись)
+async function editStatus(bot, m, suffix) {
+  const opts = { chat_id: m.chat.id, message_id: m.message_id, parse_mode: 'HTML' };
+  const html = messageToHtml(m) + '\n\n' + esc(suffix);
+  try { return m.photo ? await bot.editMessageCaption(html, opts) : await bot.editMessageText(html, opts); }
+  catch (e) { console.warn('[status edit]', e.message); }
+}
+
+// Заявка на продажу — сообщение оператору
+function managerOrderTexts({ hc, asset, user, order, amount, usdtEq, rub, rate, requisites, check }) {
+  const tag = user.username ? `@${user.username}` : `#${user.tg_id}`;
+  const give = `${amount} ${asset}${asset === 'TON' ? ` (≈ ${usdtEq.toFixed(2)} USDT)` : ''}`;
+  const get = `${Math.round(rub).toLocaleString('ru-RU')} ₽ (курс ${rate.toFixed(2)})`;
+  const time = formatMskTime(order.created_at);
+  return {
+    plain: `${hc ? '⭐ HIGH-CHECK · приоритет\n\n' : ''}🔄 Продажа ${asset} → ₽\n\n👤 ${tag} (${user.first_name || ''})\n🆔 Заявка: #${order.id}\n` +
+      `💵 Отдаёт: ${give}\n💴 Получает: ${get}\n🏦 Реквизиты: ${requisites}\n🔗 Чек: ${check}\n⏰ ${time}`,
+    html: `${hc ? '⭐ HIGH-CHECK · приоритет\n\n' : ''}${ce('title')}Продажа ${asset} → ₽\n\n${ce('user')}${esc(tag)} (${esc(user.first_name || '')})\n🆔 Заявка: #${order.id}\n` +
+      `${ce('give')}Отдаёт: ${esc(give)}\n${ce('get')}Получает: ${esc(get)}\n${ce('requisites')}Реквизиты: ${esc(requisites)}\n${ce('check')}Чек: ${esc(check)}\n${ce('time')}${esc(time)}`,
+  };
+}
+
+// Сообщения клиенту: заявка выполнена / отклонена
+function doneNotice(order, isCryptoDeposit) {
+  const n = Math.round(Number(order.rub)).toLocaleString('ru-RU');
+  const [text, key, plainEmoji] = order.type === 'exchange' ? [`${n} ₽ отправлены на ваши реквизиты.`, 'get', '💴']
+    : order.type === 'withdrawal' ? [`Чек на ${Number(order.usdt)} USDT отправлен вам в Telegram.`, 'get', '💵']
+    : isCryptoDeposit ? [`${Number(order.usdt)} USDT зачислены на ваш баланс.`, 'get', '💵'] : [null];
+  if (!text) return { plain: `✅ Заявка #${order.id} выполнена!\n\n✅ Ваша заявка выполнена!`, html: `${ce('done')}Заявка #${order.id} выполнена!\n\n${ce('done')}Ваша заявка выполнена!` };
+  return { plain: `✅ Заявка #${order.id} выполнена!\n\n${plainEmoji} ${text}`, html: `${ce('done')}Заявка #${order.id} выполнена!\n\n${ce(key)}${esc(text)}` };
+}
+const rejectNotice = order => ({
+  plain: `❌ Заявка #${order.id} отклонена.\nЕсть вопросы — напишите менеджеру.`,
+  html: `${ce('rejected')}Заявка #${order.id} отклонена.\nЕсть вопросы — напишите менеджеру.`,
+});
+
 function greetingText(d) {
   const L = ['*Eclipse Exchange* — обмен USDT и TON на рубли', ''];
   L.push(d.open ? '*Приём заявок открыт* — можно обменивать прямо сейчас' : '*Приём заявок закрыт* — заявки временно не принимаются', '');
@@ -422,4 +481,4 @@ function greetingText(d) {
   return L.join('\n');
 }
 
-module.exports = { register, getGreetingData, greetingText, greetingHtml, emojiId, customEmojiEnabled, _test: { median, round2, CHECK_RE } };
+module.exports = { register, getGreetingData, greetingText, greetingHtml, emojiId, customEmojiEnabled, sendRich, editStatus, messageToHtml, doneNotice, rejectNotice, _test: { median, round2, CHECK_RE } };
