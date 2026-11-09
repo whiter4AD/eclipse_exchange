@@ -346,16 +346,11 @@ bot.on('callback_query', async (query_cb) => {
           await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [order.usdt, order.tg_id]);
         }
         try {
-          const msg =
-            order.type === 'exchange'    ? `💴 ${Math.round(Number(order.rub)).toLocaleString('ru-RU')} ₽ отправлены на ваши реквизиты.`
-            : order.type === 'withdrawal' ? `💵 Чек на ${Number(order.usdt)} USDT отправлен вам в Telegram.`
-            : isCryptoDeposit             ? `💵 ${Number(order.usdt)} USDT зачислены на ваш баланс.`
-            : `✅ Ваша заявка выполнена!`;
-          await bot.sendMessage(order.tg_id, `✅ Заявка #${order.id} выполнена!\n\n${msg}`);
+          const n = quotes.doneNotice(order, isCryptoDeposit);
+          await quotes.sendRich(bot, order.tg_id, n.html, n.plain);
         } catch(e) {}
         await bot.answerCallbackQuery(query_cb.id, { text: '✅ Выполнено' });
-        await bot.editMessageText((query_cb.message.text || query_cb.message.caption || '') + '\n\n✅ ВЫПОЛНЕНО',
-          { chat_id: query_cb.message.chat.id, message_id: query_cb.message.message_id }).catch(()=>{});
+        await quotes.editStatus(bot, query_cb.message, '✅ ВЫПОЛНЕНО');
       }
 
       if (action === 'cancel') {
@@ -370,11 +365,11 @@ bot.on('callback_query', async (query_cb) => {
           await query('UPDATE users SET balance=balance-$1 WHERE tg_id=$2', [order.ref_earn_usdt, order.ref_tg_id]);
         }
         try {
-          await bot.sendMessage(order.tg_id, `❌ Заявка #${order.id} отклонена.\nЕсть вопросы — напишите менеджеру.`);
+          const n = quotes.rejectNotice(order);
+          await quotes.sendRich(bot, order.tg_id, n.html, n.plain);
         } catch(e) {}
         await bot.answerCallbackQuery(query_cb.id, { text: '❌ Отклонено' });
-        await bot.editMessageText((query_cb.message.text || query_cb.message.caption || '') + '\n\n❌ ОТКЛОНЕНО',
-          { chat_id: query_cb.message.chat.id, message_id: query_cb.message.message_id }).catch(()=>{});
+        await quotes.editStatus(bot, query_cb.message, '❌ ОТКЛОНЕНО');
       }
     }
   } catch (e) {
