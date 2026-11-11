@@ -6,6 +6,8 @@ const crypto = require('crypto');
 const path = require('path');
 const multer = require('multer');
 const quotes = require('./quotes');
+const orders = require('./orders');
+const captcha = require('./captcha');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -77,6 +79,8 @@ async function initDB() {
   try { await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS agreed_at TIMESTAMPTZ`); } catch(e) {}
   // единая реферальная наценка: приводим сохранённые значения к 2 %
   try { await query(`UPDATE users SET ref_delta=$1, ref_delta_type='percent' WHERE ref_code IS NOT NULL`, [REFERRAL_PERCENT]); } catch(e) {}
+  await orders.initSchema(query);
+  await captcha.migrate(query);
   console.log('✅ Database ready');
 }
 
@@ -151,7 +155,7 @@ async function getUser(tgId) {
 }
 
 function isAdmin(tgId) {
-  return process.env.MANAGER_CHAT_ID && String(tgId) === String(process.env.MANAGER_CHAT_ID);
+  return quotes.isAdminId(tgId); // MANAGER_CHAT_ID и необязательный список ADMIN_IDS
 }
 
 // ── Referral program ──────────────────────────────────────────────────────────
@@ -221,6 +225,7 @@ bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
   });
 
   if (user.blocked) return bot.sendMessage(msg.chat.id, '🚫 Ваш аккаунт заблокирован.');
+  if (!user.captcha_ok) return captcha.send(bot, msg.chat.id, msg.from.id); // сначала капча, потом приветствие
 
   if (REQUIRE_AGREEMENT && !user.agreed) {
     return bot.sendMessage(msg.chat.id,
@@ -254,7 +259,9 @@ bot.onText(/\/stats/, async (msg) => {
 });
 
 async function sendMainMenu(chatId, user) {
-  const kb = { reply_markup: { inline_keyboard: [[ { text: '🌑 Открыть обменник', web_app: { url: webAppUrl() } } ]] } };
+  const btnId = quotes.emojiId('btn');
+  const kbPlain = { reply_markup: { inline_keyboard: [[ { text: '🌑 Открыть обменник', web_app: { url: webAppUrl() } } ]] } };
+  const kb = btnId ? { reply_markup: { inline_keyboard: [[ { text: 'Открыть обменник', icon_custom_emoji_id: btnId, web_app: { url: webAppUrl() } } ]] } } : kbPlain;
   let d = null;
   try { d = await quotes.getGreetingData(query, bot, user, getEffectiveRate); }
   catch (e) { console.warn('Greeting error:', e.message); }
@@ -269,7 +276,7 @@ async function sendMainMenu(chatId, user) {
       }
     } catch (e) { console.warn('[greeting] вариант с кастомными эмодзи не отправился:', e.message); }
   }
-  bot.sendMessage(chatId, d ? quotes.greetingText(d) : '*Eclipse Exchange* — обмен USDT и TON на рубли', { parse_mode: 'Markdown', ...kb });
+  bot.sendMessage(chatId, d ? quotes.greetingText(d) : '*Eclipse Exchange* — обмен USDT и TON на рубли', { parse_mode: 'Markdown', ...kbPlain });
 }
 
 async function sendStats(chatId) {
@@ -321,6 +328,11 @@ bot.on('callback_query', async (query_cb) => {
   try {
     const data = query_cb.data || '';
     const tgId = query_cb.from.id;
+
+    if (data.startsWith('cap:')) return captcha.handle(bot, query_cb, async () => {
+      await query('UPDATE users SET captcha_ok=1 WHERE tg_id=$1', [tgId]);
+      return sendMainMenu(tgId, (await getUser(tgId)) || { tg_id: tgId });
+    });
 
     if (data === 'agree') {
       await query('UPDATE users SET agreed=1 WHERE tg_id=$1', [tgId]);
@@ -388,6 +400,7 @@ async function authMiddleware(req, res, next) {
     if (!tgUser) return res.status(401).json({ error: 'Unauthorized' });
     const user = await getUser(tgUser.id);
     if (user && user.blocked) return res.status(403).json({ error: 'Заблокирован' });
+    if (!user || !user.captcha_ok) return res.status(403).json({ error: 'Сначала пройдите проверку: отправьте боту /start', code: 'CAPTCHA' });
     req.tgUser = tgUser;
     next();
   } catch (e) { console.error('auth error:', e.message); res.status(500).json({ error: 'Ошибка сервера' }); }
@@ -401,7 +414,8 @@ async function adminMiddleware(req, res, next) {
 }
 
 // Динамический курс, продажа USDT/TON с чеком, статус приёма, согласие, High-check
-quotes.register({ app, query, authMiddleware, adminMiddleware, upsertUser, getEffectiveRate, notifyManager, formatMsk, bot, MIN_RUB });
+quotes.register({ app, query, authMiddleware, adminMiddleware, upsertUser, getEffectiveRate, notifyManager, formatMsk, bot, MIN_RUB, webAppUrl });
+orders.register({ app, query, bot, authMiddleware, adminMiddleware, upsertUser, webAppUrl });
 
 // Обёртка: ошибки в async-роутах не должны ронять процесс
 const wrap = fn => (req, res) => fn(req, res).catch(e => {
@@ -433,7 +447,7 @@ app.get('/api/me', authMiddleware, wrap(async (req, res) => {
   }
 
   res.json({ id:user.tg_id, username:user.username, first_name:user.first_name,
-    last_name:user.last_name, balance:Number(user.balance), agreed:user.agreed,
+    last_name:user.last_name, balance:Number(user.balance), agreed:user.agreed, notify_status: user.notify_status !== 0,
     avatar_url:user.avatar_url || null,
     created_at:user.created_at, stats:{
       total_orders:Number(s.total_orders)||0,
