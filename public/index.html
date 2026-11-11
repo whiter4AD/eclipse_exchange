@@ -514,6 +514,45 @@
   .modal { max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
   .modal-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 3; background: var(--bg2); }
   .modal-x { width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border2); background: var(--bg3); color: var(--text); font-size: 15px; line-height: 1; cursor: pointer; font-family: inherit; }
+  body.ov-open .bottom-nav, body.ov-open .topbar-wrap { display: none; }
+  .ov { position: fixed; inset: 0; z-index: 250; background: var(--bg); display: flex; justify-content: center; overflow-y: auto; }
+  .ov-inner { width: 100%; max-width: 430px; padding: 14px 18px calc(28px + env(safe-area-inset-bottom)); box-sizing: border-box; }
+  .ov-top { display: flex; align-items: center; gap: 12px; padding: 6px 0 14px; } .ov-title { font-size: 20px; font-weight: 700; }
+  .ov-wait { text-align: center; padding: 30px 10px 22px; }
+  .ov-spin { width: 64px; height: 64px; margin: 0 auto 18px; border-radius: 50%; border: 4px solid var(--bg4); border-top-color: var(--accent-solid); animation: ovspin 1s linear infinite; }
+  @keyframes ovspin { to { transform: rotate(360deg); } }
+  .ov-wait-t { font-size: 26px; font-weight: 700; } .ov-wait-s { font-size: 15px; color: var(--text2); margin-top: 8px; line-height: 1.5; }
+  .ov-note { padding: 14px 16px; border-radius: 18px; font-size: 14px; line-height: 1.5; margin-bottom: 12px; } .ov-note.bad { background: var(--red-dim, rgba(255,92,108,.14)); color: var(--red); }
+  .oc-card { background: var(--bg2); border: 1px solid var(--border2); border-radius: 26px; padding: 18px; }
+  .oc-head { display: flex; align-items: center; gap: 10px; } .oc-head b { font-size: 17px; flex: 1; }
+  .oc-badge { font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 12px; background: rgba(var(--accent-rgb),0.16); color: var(--accent); white-space: nowrap; }
+  .oc-badge.ok { background: var(--accent2-dim); color: var(--accent2); } .oc-badge.bad { background: var(--red-dim, rgba(255,92,108,.14)); color: var(--red); } .oc-badge.wait { background: var(--bg4); color: var(--text2); }
+  .oc-parts { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .oc-part { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 13px 14px; border-radius: 16px; background: var(--bg3); font-size: 14px; }
+  .pst { font-size: 12px; } .pst.prog { color: var(--accent); } .pst.ok { color: var(--accent2); } .pst.bad { color: var(--red); } .pst.mute { color: var(--text3); }
+  .oc-tl { font-size: 15px; color: var(--text2); margin-top: 18px; }
+  .oc-total { font-family: 'Space Grotesk', sans-serif; font-size: 44px; font-weight: 600; margin-top: 4px; } .oc-total small { font-size: 22px; color: var(--text3); }
+  .oc-bar { height: 8px; border-radius: 4px; background: var(--bg4); margin-top: 12px; overflow: hidden; } .oc-bar i { display: block; height: 100%; background: var(--accent-solid); border-radius: 4px; transition: width .4s; }
+  .oc-sr { display: flex; justify-content: space-between; gap: 14px; margin-top: 14px; } .oc-sr span { display: block; font-size: 13px; color: var(--text2); } .oc-sr b { font-size: 17px; }
+  .oc-prompt { margin-top: 12px; padding: 18px; border-radius: 22px; background: var(--bg2); border: 1px solid var(--border2); }
+  .oc-pt { display: flex; justify-content: space-between; font-size: 14px; color: var(--text2); } .oc-pt span:first-child { color: var(--accent); font-weight: 600; }
+  .oc-pq { font-size: 24px; font-weight: 700; margin: 12px 0 14px; } .oc-pb { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; }
+  .oc-pb button { height: 54px; border-radius: 999px; border: none; font-size: 16px; font-weight: 600; font-family: inherit; cursor: pointer; background: var(--accent-solid); color: #fff; } .oc-pb button.alt { background: var(--bg3); color: var(--text); }
+  .oc-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .oc-tile { padding: 16px; border-radius: 22px; background: var(--bg2); border: 1px solid var(--border2); min-height: 140px; display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer; position: relative; }
+  .oc-tile.blue { background: var(--accent-solid); color: #fff; border-color: transparent; cursor: default; } .oc-tile b { font-size: 17px; } .oc-tile small { font-size: 13px; color: var(--text2); margin-top: 4px; word-break: break-word; } .oc-tile.blue small { color: rgba(255,255,255,.85); }
+  .oc-ti { position: absolute; top: 16px; left: 16px; width: 38px; height: 38px; border-radius: 12px; background: var(--accent-solid); color: #fff; display: flex; align-items: center; justify-content: center; } .oc-ti.lock { background: #000; }
+  .oc-badge-n { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; border-radius: 10px; background: var(--red); color: #fff; font-size: 12px; font-style: normal; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+  .chat-sheet { position: fixed; inset: 0; z-index: 260; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; }
+  .chat-box { width: 100%; max-width: 430px; height: 80vh; height: 80dvh; background: var(--bg2); border: 1px solid var(--border2); border-radius: 26px 26px 0 0; padding: 16px 16px calc(14px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; box-sizing: border-box; }
+  .chat-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 6px 2px; }
+  .cm { max-width: 82%; padding: 10px 12px; border-radius: 16px; font-size: 15px; line-height: 1.4; word-break: break-word; }
+  .cm.user { align-self: flex-end; background: var(--accent-solid); color: #fff; border-bottom-right-radius: 6px; } .cm.operator { align-self: flex-start; background: var(--bg4); border-bottom-left-radius: 6px; }
+  .cm.system { align-self: center; background: none; color: var(--text3); font-size: 12.5px; text-align: center; max-width: 92%; } .cm-d { font-size: 11px; opacity: .65; margin-top: 3px; text-align: right; }
+  .chat-in { display: flex; gap: 8px; margin-top: 10px; }
+  .chat-in input { flex: 1; height: 48px; border-radius: 999px; border: 1px solid var(--border2); background: var(--bg3); color: var(--text); padding: 0 16px; font-size: 16px; font-family: inherit; outline: none; }
+  .chat-in button { width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--accent-solid); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .active-order { margin: 12px 20px 0; padding: 14px 16px; border-radius: 22px; background: rgba(var(--accent-rgb),0.12); border: 1px solid var(--accent); display: flex; gap: 14px; align-items: center; cursor: pointer; color: var(--text); }
 </style>
 </head>
 <body class="onb-open">
@@ -524,6 +563,11 @@
 
   <!-- ── HOME PAGE ── -->
   <div class="page active" id="page-home">
+    <div class="active-order" id="active-order" style="display:none" onclick="openOrder(parseInt(this.dataset.id, 10))">
+      <span class="st-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h15M15 4l4 4-4 4M20 16H5M9 12l-4 4 4 4"/></svg></span>
+      <div style="flex:1"><div class="st-title" id="ao-title">Активная заявка</div><div class="st-sub" id="ao-sub"></div></div>
+      <svg class="action-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
+    </div>
     <div class="news-card">
       <div class="news-top"><span class="news-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4 3 11l6 2.5L11.5 20l3-4.5L19 18z"/></svg></span><span class="news-tag">News</span></div>
       <div class="news-title">Будь в курсе обновлений</div>
@@ -636,7 +680,7 @@
     <div class="filters">
       <input class="f-input" id="f-q" placeholder="Номер, банк, сумма…" oninput="renderOrders()">
       <div class="f-grid">
-        <select class="f-select" id="f-status" onchange="renderOrders()"><option value="">Все статусы</option><option value="pending">В обработке</option><option value="done">Выполнено</option><option value="cancelled">Отменено</option></select>
+        <select class="f-select" id="f-status" onchange="renderOrders()"><option value="">Все статусы</option><option value="pending">Ожидает оператора</option><option value="accepted">В работе</option><option value="done">Выполнено</option><option value="cancelled">Отменено</option></select>
         <select class="f-select" id="f-type" onchange="renderOrders()"><option value="">Все операции</option><option value="exchange">Продажа USDT</option><option value="buy">Покупка USDT</option><option value="deposit">Пополнение</option><option value="withdrawal">Вывод</option></select>
       </div>
       <div class="f-grid">
@@ -718,6 +762,8 @@
         <label class="switch"><input type="checkbox" data-setting="glass"><span></span></label></div>
       <div class="setting-row"><div><div class="setting-title">Тактильный отклик</div><div class="setting-sub">На поддерживаемых устройствах</div></div>
         <label class="switch"><input type="checkbox" data-setting="haptic"><span></span></label></div>
+      <div class="setting-row"><div><div class="setting-title">Уведомления о приёме заявок</div><div class="setting-sub">Сообщим, когда приём откроется или закроется</div></div>
+        <label class="switch"><input type="checkbox" id="notify-toggle" checked onchange="saveNotify(this.checked)"><span></span></label></div>
     </div>
     <div class="dd-title">Ваши данные и документы</div>
     <div style="padding:0 20px">
@@ -920,6 +966,16 @@
   <div class="doc-body" id="doc-body"></div>
   <button class="cta-btn" onclick="closeDoc()">Понятно</button></div></div>
 
+<div class="ov" id="ov" style="display:none"><div class="ov-inner">
+  <div class="ov-top"><button class="btn-ghost" style="width:44px;height:44px" onclick="closeOrder()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><div class="ov-title" id="ov-title">Заявка</div></div>
+  <div id="ov-body"></div>
+</div></div>
+<div class="chat-sheet" id="chat-sheet" style="display:none"><div class="chat-box">
+  <div class="doc-head"><span>Чат с оператором</span><button onclick="closeChat()">✕</button></div>
+  <div class="chat-list" id="chat-list"></div>
+  <div class="chat-in"><input id="chat-input" placeholder="Сообщение…" maxlength="1000" onkeydown="if(event.key==='Enter')sendChat()"><button onclick="sendChat()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button></div>
+</div></div>
+
 <!-- Toast -->
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
 
@@ -996,6 +1052,7 @@
 
       // Персональный курс, если пользователя пригласили по реф-ссылке
       applyReferralPricing(me.referral);
+      if ($('notify-toggle')) $('notify-toggle').checked = me.notify_status !== false;
       checkOnboarding(me);
     } catch (e) {
       hideOnb();
@@ -1005,7 +1062,7 @@
 
   // ── Orders history with filters ────────────────────────────────────────────
   let ordersCache = [];
-  const STATUS_MAP = { pending: ['В обработке', 'pending'], done: ['Выполнено', 'done'], cancelled: ['Отменено', 'cancelled'] };
+  const STATUS_MAP = { pending: ['Ожидает оператора', 'pending'], accepted: ['В работе', 'pending'], done: ['Выполнено', 'done'], cancelled: ['Отменено', 'cancelled'] };
   const TYPE_MAP = { exchange: 'Продажа USDT → ₽', buy: 'Покупка USDT', deposit: 'Пополнение', withdrawal: 'Вывод USDT' };
   async function loadOrders() {
     try { ordersCache = await api('GET', '/api/orders'); renderOrders(); }
@@ -1038,7 +1095,7 @@
       const [stLabel, stClass] = STATUS_MAP[o.status] || [o.status, 'pending'];
       const amount = o.type === 'buy' ? `+${Number(o.usdt).toFixed(2)} USDT` : o.type === 'exchange' ? `${Math.round(Number(o.rub)).toLocaleString('ru-RU')} ₽` : `${Number(o.usdt).toFixed(2)} USDT`;
       const dt = new Date(o.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-      return `<div class="order-item"><div><div class="order-type">${o.type === 'exchange' && o.asset === 'TON' ? 'Продажа TON → ₽' : (TYPE_MAP[o.type] || 'Заявка')}</div><div class="order-date">№${o.id} · ${dt}</div></div>
+      return `<div class="order-item"${o.type === 'exchange' ? ` onclick="openOrder(${o.id})" style="cursor:pointer"` : ''}><div><div class="order-type">${o.type === 'exchange' && o.asset === 'TON' ? 'Продажа TON → ₽' : (TYPE_MAP[o.type] || 'Заявка')}</div><div class="order-date">№${o.id} · ${dt}</div></div>
         <div style="text-align:right"><div class="order-amount sensitive">${amount}</div><div class="order-status ${stClass}">${stLabel}</div></div></div>`;
     }).join('');
   }
@@ -1046,7 +1103,7 @@
   // ── State ───────────────────────────────────────────────────────────────────
   const $ = id => document.getElementById(id);
   let RATE_SELL = 0, BASE_RATE_SELL = 0, TON_USDT = 0;
-  const MIN_RUB = 4000;
+  let MIN_AMOUNT = 5;
   let HC_DISCOUNT = 0.01, HC_MIN_RUB = 5000, highCheck = false;
   let myReferral = null, quote = null, quoteLeft = 0, quoteLoading = false;
   let asset = 'USDT', homeAsset = 'USDT', appStatus = { open: true, operators: 1 }, cfg = {}, onbIdx = 0;
@@ -1058,7 +1115,7 @@
   const fitResult = el => { const n = el.textContent.length; el.style.fontSize = n > 13 ? '34px' : n > 10 ? '42px' : '52px'; };
   const unitRate = a => a === 'TON' ? (TON_USDT && RATE_SELL ? Math.round(TON_USDT * RATE_SELL * 100) / 100 : 0) : RATE_SELL;
   const finalRate = a => { const r = unitRate(a); return highCheck ? Math.round(r * (1 - HC_DISCOUNT) * 100) / 100 : r; };
-  const minRub = () => highCheck ? Math.max(MIN_RUB, HC_MIN_RUB) : MIN_RUB;
+  const minAmt = () => { const r = finalRate(asset); return highCheck && r ? Math.max(MIN_AMOUNT, Math.ceil(HC_MIN_RUB / r)) : MIN_AMOUNT; };
 
   function refNoteText() {
     if (!myReferral) return '';
@@ -1073,7 +1130,7 @@
       const changed = quote && (q.sell_rate !== quote.sell_rate || q.ton_usdt !== quote.ton_usdt);
       quote = q; quoteLeft = q.seconds_left;
       BASE_RATE_SELL = q.base_sell; RATE_SELL = q.sell_rate; TON_USDT = q.ton_usdt || 0;
-      HC_DISCOUNT = q.hc_discount ?? HC_DISCOUNT; HC_MIN_RUB = q.hc_min_rub ?? HC_MIN_RUB;
+      HC_DISCOUNT = q.hc_discount ?? HC_DISCOUNT; HC_MIN_RUB = q.hc_min_rub ?? HC_MIN_RUB; MIN_AMOUNT = q.min_amount ?? MIN_AMOUNT;
       renderRates();
       if (changed && !silent) showToast('Курс обновлён', 'info');
     } catch (e) { console.warn('Quote error:', e.message); }
@@ -1168,13 +1225,13 @@
   function toggleHighCheck(on) { highCheck = !!on; xRecalc(); }
 
   function xRecalc() {
-    const val = parseFloat($('x-amount').value), rate = finalRate(asset), min = minRub();
+    const val = parseFloat($('x-amount').value), rate = finalRate(asset), min = minAmt();
     $('x-rate').textContent = rate ? 'Курс ' + fmtMoney(rate) : 'Курс —';
-    $('x-hint').textContent = rate ? `От ${Math.ceil(min / rate)} ${asset}` : (asset === 'TON' ? 'Курс TON временно недоступен' : '—');
+    $('x-hint').textContent = rate ? `От ${min} ${asset}` : (asset === 'TON' ? 'Курс TON временно недоступен' : '—');
     const res = $('x-result'), warn = $('x-warn'); warn.classList.remove('show');
     let ok = false;
     if (val > 0 && rate) {
-      if (val * rate < min) { res.innerHTML = '—'; warn.textContent = `Минимальная сумма — ${min.toLocaleString('ru-RU')} ₽ (~${Math.ceil(min / rate)} ${asset})`; warn.classList.add('show'); }
+      if (val < min) { res.innerHTML = '—'; warn.textContent = `Минимальная сумма — ${min} ${asset}`; warn.classList.add('show'); }
       else { res.innerHTML = bigAmount(val * rate, '₽'); ok = true; }
     } else res.innerHTML = '—';
     fitResult(res);
@@ -1202,16 +1259,15 @@
   async function submitExchange() {
     const amount = parseFloat($('x-amount').value), checkUrl = $('x-check').value.trim(), rate = finalRate(asset);
     const requisites = $('x-req').value.trim(), bank = $('x-bank').value.trim();
-    if (!amount || !rate || amount * rate < minRub()) { showToast('Проверьте сумму', 'error'); xGo(1); return; }
+    if (!amount || !rate || amount < minAmt()) { showToast('Проверьте сумму', 'error'); xGo(1); return; }
     if (requisites.length < 5 || !bank) { showToast('Укажите реквизиты и банк', 'error'); xGo(2); return; }
     if (!CHECK_RE.test(checkUrl)) { showToast('Вставьте ссылку на чек xRocket или Crypto Bot', 'error'); return; }
     const btn = $('x-submit'); btn.disabled = true; btn.textContent = 'Отправка…';
     try {
-      await api('POST', '/api/exchange', { asset, amount, requisites: `${requisites} | ${bank}`, check_url: checkUrl, quote_id: quote && quote.id, high_check: highCheck });
+      const resp = await api('POST', '/api/exchange', { asset, amount, requisites: `${requisites} | ${bank}`, check_url: checkUrl, quote_id: quote && quote.id, high_check: highCheck });
       ['x-amount', 'x-req', 'x-bank', 'x-check'].forEach(id => $(id).value = '');
       highCheck = false; $('hc-toggle').checked = false; xRecalc();
-      showToast('✅ Заявка отправлена! Менеджер проверит чек', 'success');
-      switchPage('deals');
+      switchPage('home'); xGo(1); openOrder(resp.order.id);
     } catch (e) { await handleApiError(e); }
     finally { btn.disabled = false; btn.textContent = 'Отправить заявку'; }
   }
@@ -1222,6 +1278,118 @@
     try { await api('POST', '/api/export', {}); showToast('Файл отправлен вам в чат с ботом', 'success'); }
     catch (e) { showToast(e.message, 'error'); }
     finally { btn.disabled = false; }
+  }
+
+  // ── Order window: waiting → in progress → done ──────────────────────────────
+  const escHtml = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const rubFmt = n => fmtMoney(Number(n)) + ' ₽';
+  const OSTATUS = { pending: ['Ожидает оператора', 'wait'], accepted: ['Выплата в процессе', 'prog'], done: ['Выполнена', 'ok'], cancelled: ['Отклонена', 'bad'] };
+  const PSTATUS = { planned: ['Готовится', 'mute'], sent: ['Ждёт подтверждения', 'prog'], confirmed: ['Получено', 'ok'], disputed: ['Спор', 'bad'] };
+  const CHAT_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.7A8 8 0 1 1 21 12z"/></svg>';
+  const LOCK_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+  let ovId = null, ovTimer = null, ovJson = '', ovData = null, chatOpen = false, chatLast = 0, chatSeen = 0, chatTimer = null;
+
+  function openOrder(id) {
+    ovId = id; ovJson = ''; ovData = null; chatSeen = 0;
+    $('ov').style.display = 'flex'; document.body.classList.add('ov-open');
+    $('ov-title').textContent = 'Заявка №' + id;
+    $('ov-body').innerHTML = '<div class="ov-wait"><div class="ov-spin"></div></div>';
+    loadOrderView(); clearInterval(ovTimer); ovTimer = setInterval(loadOrderView, 3000);
+  }
+  function closeOrder() {
+    clearInterval(ovTimer); closeChat(); ovId = null;
+    $('ov').style.display = 'none'; document.body.classList.remove('ov-open'); refreshActiveOrder();
+  }
+  async function loadOrderView() {
+    if (!ovId) return;
+    try {
+      const o = await api('GET', '/api/orders/' + ovId);
+      if (!ovId) return;
+      ovData = o;
+      const key = JSON.stringify(o) + '|' + chatSeen;
+      if (key !== ovJson) { ovJson = key; renderOrderView(o); }
+      if (o.status === 'done' || o.status === 'cancelled') clearInterval(ovTimer);
+    } catch (e) { if (/не найдена/.test(e.message)) closeOrder(); }
+  }
+  function renderOrderView(o) {
+    $('ov-title').textContent = 'Заявка №' + o.id;
+    const [bl, bc] = OSTATUS[o.status] || [o.status, 'wait'];
+    const coin = `<span class="xc-coin${o.asset === 'TON' ? ' ton' : ''}">${o.asset === 'TON' ? TON_SVG : '₮'}</span>`;
+    const [ti, td] = fmtMoney(o.rub).split(',');
+    const pct = o.rub ? Math.min(100, o.sent_total / o.rub * 100) : 0;
+    let h = '';
+    if (o.status === 'pending') h += '<div class="ov-wait"><div class="ov-spin"></div><div class="ov-wait-t">Ожидайте</div><div class="ov-wait-s">К вам подключится ближайший свободный оператор. Заявка уже у операторов — обычно это занимает несколько минут.</div></div>';
+    if (o.status === 'cancelled') h += `<div class="ov-note bad">Заявка отклонена${o.decline_reason ? '<br>Причина: ' + escHtml(o.decline_reason) : ''}</div>`;
+    h += `<div class="oc-card"><div class="oc-head">${coin}<b>${o.amount} ${o.asset} → RUB</b><span class="oc-badge ${bc}">${bl}</span></div>`;
+    if (o.parts.length && o.status !== 'cancelled') {
+      h += '<div class="oc-parts">' + o.parts.map(p => { const [pl, pc] = PSTATUS[p.status] || [p.status, 'mute'];
+        return `<div class="oc-part"><span>${o.parts.length > 1 ? 'Часть ' + p.n : 'Перевод'}, ${escHtml(p.method)}</span><b>${rubFmt(p.amount)}</b><span class="pst ${pc}">${pl}</span></div>`; }).join('') + '</div>';
+    }
+    h += `<div class="oc-tl">Всего к выплате</div><div class="oc-total">${ti}<small>,${td} ₽</small></div>`;
+    if (o.status === 'accepted' || o.status === 'done')
+      h += `<div class="oc-bar"><i style="width:${pct.toFixed(1)}%"></i></div><div class="oc-sr"><div><span>Отправлено</span><b>${rubFmt(o.sent_total)}</b></div><div><span>Осталось отправить</span><b>${rubFmt(o.remaining)}</b></div></div>`;
+    else h += `<div class="oc-sr"><div><span>Курс</span><b>${o.rate ? fmtMoney(o.rate) : '—'}</b></div><div><span>Отдаёте</span><b>${o.amount} ${o.asset}</b></div></div>`;
+    h += '</div>';
+    const aw = o.status === 'accepted' && o.parts.find(p => p.status === 'sent');
+    if (aw) h += `<div class="oc-prompt"><div class="oc-pt"><span>● Нужно ваше действие</span><span>${o.parts.length > 1 ? 'Часть ' + aw.n + ' из ' + o.parts.length : 'Перевод'}</span></div>` +
+      `<div class="oc-pq">Пришло ${rubFmt(aw.amount)}?</div><div class="oc-pb"><button class="alt" onclick="confirmPart(${aw.id}, false)">Не пришли</button><button onclick="confirmPart(${aw.id}, true)">Да, получил</button></div></div>`;
+    const unread = Math.max(0, (o.op_msg_count || 0) - chatSeen);
+    h += `<div class="oc-tiles"><div class="oc-tile" onclick="openChat()"><span class="oc-ti">${CHAT_SVG}${unread ? `<i class="oc-badge-n">${unread}</i>` : ''}</span><b>Чат с оператором</b><small>${o.status === 'pending' || o.status === 'accepted' ? 'В каждой заявке' : 'История переписки'}</small></div>` +
+      `<div class="oc-tile blue"><span class="oc-ti lock">${LOCK_SVG}</span><b>Ваши реквизиты</b><small>${escHtml(o.requisites || '')}</small></div></div>`;
+    $('ov-body').innerHTML = h;
+  }
+  async function confirmPart(pid, received) {
+    try {
+      await api('POST', `/api/orders/${ovId}/parts/${pid}/confirm`, { received });
+      ovJson = ''; await loadOrderView();
+      if (!received) showToast('Оператор уведомлён и свяжется с вами в чате', 'info');
+    } catch (e) { showToast(e.message, 'error'); loadOrderView(); }
+  }
+
+  // ── Chat with the operator ──────────────────────────────────────────────────
+  function openChat() {
+    chatOpen = true; chatLast = 0; $('chat-list').innerHTML = ''; $('chat-sheet').style.display = 'flex';
+    loadMessages(); clearInterval(chatTimer); chatTimer = setInterval(loadMessages, 3000);
+  }
+  function closeChat() { chatOpen = false; clearInterval(chatTimer); $('chat-sheet').style.display = 'none'; ovJson = ''; if (ovId) loadOrderView(); }
+  async function loadMessages() {
+    if (!ovId || !chatOpen) return;
+    try {
+      const first = chatLast === 0;
+      const d = await api('GET', `/api/orders/${ovId}/messages?after=${chatLast}`);
+      const list = $('chat-list'); const stick = first || list.scrollTop + list.clientHeight >= list.scrollHeight - 50;
+      d.messages.forEach(m => {
+        chatLast = Math.max(chatLast, m.id);
+        const el = document.createElement('div'); el.className = 'cm ' + m.sender;
+        const t = document.createElement('div'); t.textContent = m.text; el.appendChild(t);
+        if (m.sender !== 'system') { const dt = document.createElement('div'); dt.className = 'cm-d'; dt.textContent = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' }); el.appendChild(dt); }
+        list.appendChild(el);
+      });
+      if (d.messages.length && stick) list.scrollTop = list.scrollHeight;
+      if (ovData) chatSeen = ovData.op_msg_count || 0;
+    } catch (e) {}
+  }
+  async function sendChat() {
+    const inp = $('chat-input'); const text = inp.value.trim(); if (!text) return; inp.value = '';
+    try { await api('POST', `/api/orders/${ovId}/messages`, { text }); await loadMessages(); $('chat-list').scrollTop = $('chat-list').scrollHeight; }
+    catch (e) { showToast(e.message, 'error'); inp.value = text; }
+  }
+
+  // ── Banner of the active order on the home page ────────────────────────────
+  async function refreshActiveOrder() {
+    try {
+      const list = await api('GET', '/api/orders');
+      const a = list.find(o => o.type === 'exchange' && (o.status === 'pending' || o.status === 'accepted'));
+      const b = $('active-order');
+      if (!a) { b.style.display = 'none'; return; }
+      b.style.display = 'flex'; b.dataset.id = a.id;
+      $('ao-title').textContent = `Заявка №${a.id} · ${a.status === 'pending' ? 'ожидает оператора' : 'выплата в процессе'}`;
+      $('ao-sub').textContent = `${a.asset || 'USDT'} ${Number(a.amount != null ? a.amount : a.usdt)} → ${Math.round(Number(a.rub)).toLocaleString('ru-RU')} ₽`;
+    } catch (e) {}
+  }
+  async function saveNotify(on) {
+    try { await api('POST', '/api/settings/notify', { status: on }); }
+    catch (e) { showToast(e.message, 'error'); $('notify-toggle').checked = !on; }
   }
 
   // ── Modals: ✕ button in every window ────────────────────────────────────────
@@ -1627,6 +1795,8 @@
   loadUser();
   loadStatus();
   loadQuote(true);
+  refreshActiveOrder(); setInterval(refreshActiveOrder, 20000);
+  { const dl = parseInt(new URLSearchParams(location.search).get('order'), 10); if (dl > 0) setTimeout(() => openOrder(dl), 500); }
   loadChart();
   setInterval(loadChart, 5 * 60 * 1000);
   setInterval(tickQuote, 1000);
