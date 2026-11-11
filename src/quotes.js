@@ -8,7 +8,8 @@ const TTL_SEC = 600;          // котировка живёт 10 минут
 const REUSE_MIN_LEFT = 30;    // отдаём ту же котировку, пока до конца > 30 сек
 const GRACE_SEC = 10;         // допуск на задержку при создании заявки
 const HC_DISCOUNT = Number(process.env.HIGH_CHECK_DISCOUNT ?? 0.01);  // High-check: курс ниже на 1%
-const HC_MIN_RUB = Number(process.env.HIGH_CHECK_MIN_RUB ?? 5000);    // High-check: выплата от 5 000 ₽
+const HC_MIN_RUB = Number(process.env.HIGH_CHECK_MIN_RUB ?? 5000);
+const MIN_AMOUNT = Number(process.env.MIN_AMOUNT ?? 5);   // минимальная сумма обмена: 5 USDT / 5 TON    // High-check: выплата от 5 000 ₽
 const CACHE_MS = 60 * 1000;   // рыночный курс кэшируем на минуту
 
 const round2 = n => Math.round(n * 100) / 100;
@@ -192,7 +193,7 @@ async function recordRate(query, bot) {
 const formatMskTime = ts => ts ? new Date(ts).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' МСК' : '—';
 
 function register(d) {
-  const { app, query, authMiddleware, adminMiddleware, upsertUser, getEffectiveRate, notifyManager, formatMsk, bot, MIN_RUB } = d;
+  const { app, query, authMiddleware, adminMiddleware, webAppUrl, upsertUser, getEffectiveRate, notifyManager, formatMsk, bot, MIN_RUB } = d;
   if (!historyStarted) {   // точка истории каждые 5 минут, независимо от посещаемости
     historyStarted = true;
     setTimeout(() => recordRate(query, bot), 8000).unref();
@@ -209,7 +210,7 @@ function register(d) {
     res.json({ id: q.id, seconds_left: Math.max(0, Math.floor(Number(q.left))),
       base_sell: Number(q.sell_rate), base_buy: Number(q.buy_rate),
       sell_rate: round2(sell.rate), buy_rate: round2(buy.rate),
-      hc_discount: HC_DISCOUNT, hc_min_rub: HC_MIN_RUB,
+      hc_discount: HC_DISCOUNT, hc_min_rub: HC_MIN_RUB, min_amount: MIN_AMOUNT,
       ton_usdt: q.ton_usdt ? Number(q.ton_usdt) : null, updated_at: q.created_at });
   }));
 
@@ -242,8 +243,8 @@ function register(d) {
     const rateRef = round2(unit * rateU);                              // курс за 1 монету
     const rate = hc ? round2(rateRef * (1 - HC_DISCOUNT)) : rateRef;   // скидка High-check не входит в доход реферера
     const rub = amount * rate, usdtEq = amount * unit;
-    const minRub = hc ? Math.max(MIN_RUB, HC_MIN_RUB) : MIN_RUB;
-    if (rub < minRub) return res.status(400).json({ error: `Минимум ${minRub.toLocaleString('ru-RU')} ₽ (~${Math.ceil(minRub / rate)} ${asset})` });
+    if (amount < MIN_AMOUNT) return res.status(400).json({ error: `Минимальная сумма — ${MIN_AMOUNT} ${asset}` });
+    if (hc && rub < HC_MIN_RUB) return res.status(400).json({ error: `High-check: выплата от ${HC_MIN_RUB.toLocaleString('ru-RU')} ₽` });
     const dup = await query("SELECT 1 FROM orders WHERE check_url=$1 AND status<>'cancelled' LIMIT 1", [check_url.trim()]);
     if (dup.rows[0]) return res.status(400).json({ error: 'Этот чек уже использован в другой заявке' });
     const refEarnRub = refTgId ? Number((usdtEq * (baseU - rateU)).toFixed(2)) : 0;
@@ -253,11 +254,11 @@ function register(d) {
       [user.tg_id, usdtEq, rub, requisites.trim(), check_url.trim(), refTgId, refEarnRub, refEarnUsdt, hc, asset, amount]);
     const order = r.rows[0];
     if (refTgId && refEarnUsdt > 0) await query('UPDATE users SET balance=balance+$1 WHERE tg_id=$2', [refEarnUsdt, refTgId]);
-    if (process.env.MANAGER_CHAT_ID) {
+    {
       const t = managerOrderTexts({ hc, asset, user, order, amount, usdtEq, rub, rate, requisites: requisites.trim(), check: check_url.trim() });
-      sendRich(bot, process.env.MANAGER_CHAT_ID, t.html, t.plain, { reply_markup: { inline_keyboard: [[
-        { text: '✅ Выполнено', callback_data: `done_${order.id}` }, { text: '❌ Отклонить', callback_data: `cancel_${order.id}` }]] } })
-        .catch(e => console.error('Exchange notify error:', e.message));
+      const base = webAppUrl ? webAppUrl() : (process.env.WEBAPP_URL || '');
+      const kb = /^https:\/\//.test(base) ? { reply_markup: { inline_keyboard: [[{ text: 'Открыть заявку', web_app: { url: `${base}/admin.html?order=${order.id}` } }]] } } : {};
+      for (const aid of adminIds()) sendRich(bot, aid, t.html, t.plain, kb).catch(e => console.error('Exchange notify error:', e.message));
     }
     res.json({ success: true, order });
   }));
@@ -343,13 +344,12 @@ function register(d) {
   // Админка и команды менеджера: открыть / закрыть приём заявок
   if (adminMiddleware) app.post('/api/admin/status', adminMiddleware, wrap(async (req, res) => {
     const { open, operators } = req.body || {};
-    if (typeof open === 'boolean') await setSetting(query, 'accepting', open ? '1' : '0');
+    if (typeof open === 'boolean') await setAccepting(query, bot, open, webAppUrl);
     if (Number.isInteger(operators) && operators >= 0 && operators <= 99) await setSetting(query, 'operators', operators);
     res.json({ success: true, ...(await getStatus(query)) });
   }));
-  const isMgr = m => process.env.MANAGER_CHAT_ID && String(m.from.id) === String(process.env.MANAGER_CHAT_ID);
-  bot.onText(/^\/open\b/, async m => { if (!isMgr(m)) return; await setSetting(query, 'accepting', '1'); bot.sendMessage(m.chat.id, '✅ Приём заявок открыт'); });
-  bot.onText(/^\/close\b/, async m => { if (!isMgr(m)) return; await setSetting(query, 'accepting', '0'); bot.sendMessage(m.chat.id, '⛔ Приём заявок закрыт'); });
+  bot.onText(/^\/open\b/, async m => { if (!isAdminId(m.from.id)) return; const ch = await setAccepting(query, bot, true, webAppUrl); bot.sendMessage(m.chat.id, ch ? '✅ Приём заявок открыт, клиентам отправлено уведомление' : 'Приём заявок уже открыт'); });
+  bot.onText(/^\/close\b/, async m => { if (!isAdminId(m.from.id)) return; const ch = await setAccepting(query, bot, false, webAppUrl); bot.sendMessage(m.chat.id, ch ? '⛔ Приём заявок закрыт, клиентам отправлено уведомление' : 'Приём заявок уже закрыт'); });
 
   // Пополнение чеком: xRocket и Crypto Bot (ссылки любого регистра, в т.ч. t.me/send и tonRocketBot)
   app.post('/api/deposit', authMiddleware, wrap(async (req, res) => {
@@ -387,10 +387,10 @@ async function getGreetingData(query, bot, user, getEffectiveRate) {
 // Кастомные эмодзи (ID можно переопределить переменной EMOJI_<ИМЯ>, пустое значение отключает одно, CUSTOM_EMOJI=off — все)
 const EMOJI_IDS = { title: '5893365462837760511', open: '5447464938874348535', closed: '5246821534437221767', usdt: '5893473283696759404',
   ton: '5260681660189408650', payout: '5893450623449305489', operators: '5902335789798265487', admin: '5445033158456145975',
-  user: '5902335789798265487', give: '5406920593629024429', get: '5406730197728790719', requisites: '5902056028513505203',
+  btn: '5895652322469482989', user: '5902335789798265487', give: '5406920593629024429', get: '5406730197728790719', requisites: '5902056028513505203',
   check: '5444961234933806330', time: '5902050947567194830', done: '5447464938874348535', rejected: '5246821534437221767' };
 const EMOJI_FALLBACK = { title: '🌑', open: '🟢', closed: '🔴', usdt: '💵', ton: '💎', payout: '✈️', operators: '👤', admin: '🛡',
-  user: '👤', give: '💵', get: '💴', requisites: '🏦', check: '🔗', time: '⏰', done: '✅', rejected: '❌' };
+  btn: '🌑', user: '👤', give: '💵', get: '💴', requisites: '🏦', check: '🔗', time: '⏰', done: '✅', rejected: '❌' };
 function emojiId(key) {
   if ((process.env.CUSTOM_EMOJI || '').toLowerCase() === 'off') return null;
   const env = process.env['EMOJI_' + key.toUpperCase()];
@@ -408,7 +408,7 @@ function greetingHtml(d) {
   if (d.usdt) L.push(`${ce('usdt')}USDT: ${fmtRub(d.usdt)}`);
   if (d.ton) L.push(`${ce('ton')}TON: ${fmtRub(d.ton)}`);
   if (d.usdt || d.ton) L.push('');
-  L.push(`${ce('payout')}Рубли на карту или по СБП, обычно за ${esc(process.env.PAYOUT_ETA || '15–30 минут')}`);
+  L.push(`${ce('payout')}Рубли на карту или по СБП, обычно за ${esc(process.env.PAYOUT_ETA || '5–15 минут')}`);
   if (d.open) L.push('', `${ce('operators')}Операторов на смене: ${d.operators}`);
   return L.join('\n');
 }
@@ -470,15 +470,47 @@ const rejectNotice = order => ({
   html: `${ce('rejected')}Заявка #${order.id} отклонена.\nЕсть вопросы — напишите менеджеру.`,
 });
 
+// Операторы: MANAGER_CHAT_ID + необязательный список ADMIN_IDS через запятую
+function adminIds() {
+  const s = new Set();
+  if (process.env.MANAGER_CHAT_ID) s.add(String(process.env.MANAGER_CHAT_ID).trim());
+  (process.env.ADMIN_IDS || '').split(',').map(x => x.trim()).filter(Boolean).forEach(x => s.add(x));
+  return [...s];
+}
+const isAdminId = id => adminIds().includes(String(id));
+
+// Автоматическое уведомление клиентов об открытии / закрытии приёма заявок
+async function broadcastStatus(query, bot, open, webAppUrl) {
+  try {
+    const head = open ? 'Приём заявок открыт' : 'Приём заявок закрыт';
+    const sub = open ? 'Можно обменивать USDT или TON на рубли.' : 'Заявки временно не принимаются.';
+    const base = webAppUrl ? webAppUrl() : '';
+    const kb = open && /^https:\/\//.test(base) ? { reply_markup: { inline_keyboard: [[{ text: 'Открыть обменник', web_app: { url: base } }]] } } : {};
+    const r = await query('SELECT tg_id FROM users WHERE blocked=0 AND agreed=1 AND COALESCE(notify_status,1)=1');
+    let sent = 0;
+    for (const u of r.rows) {
+      try { if (await sendRich(bot, u.tg_id, `${ce(open ? 'open' : 'closed')}<b>${head}</b>\n${sub}`, `${open ? '🟢' : '🔴'} ${head}\n${sub}`, kb)) sent++; } catch (e) {}
+      await new Promise(r2 => setTimeout(r2, 40));
+    }
+    console.log(`[status] уведомление «${head}»: ${sent}/${r.rows.length}`);
+  } catch (e) { console.warn('[status] рассылка не удалась:', e.message); }
+}
+async function setAccepting(query, bot, open, webAppUrl) {
+  const prev = (await getSetting(query, 'accepting', '1')) === '1';
+  await setSetting(query, 'accepting', open ? '1' : '0');
+  if (prev !== open) broadcastStatus(query, bot, open, webAppUrl);   // в фоне, ответ не ждёт рассылку
+  return prev !== open;
+}
+
 function greetingText(d) {
   const L = ['*Eclipse Exchange* — обмен USDT и TON на рубли', ''];
   L.push(d.open ? '*Приём заявок открыт* — можно обменивать прямо сейчас' : '*Приём заявок закрыт* — заявки временно не принимаются', '');
   if (d.usdt) L.push('USDT: ' + fmtRub(d.usdt));
   if (d.ton) L.push('TON: ' + fmtRub(d.ton));
   if (d.usdt || d.ton) L.push('');
-  L.push('Рубли на карту или по СБП, обычно за ' + (process.env.PAYOUT_ETA || '15–30 минут'));
+  L.push('Рубли на карту или по СБП, обычно за ' + (process.env.PAYOUT_ETA || '5–15 минут'));
   if (d.open) L.push('', 'Операторов на смене: ' + d.operators);
   return L.join('\n');
 }
 
-module.exports = { register, getGreetingData, greetingText, greetingHtml, emojiId, customEmojiEnabled, sendRich, editStatus, messageToHtml, doneNotice, rejectNotice, _test: { median, round2, CHECK_RE } };
+module.exports = { register, getGreetingData, greetingText, greetingHtml, emojiId, customEmojiEnabled, esc, ce, adminIds, isAdminId, setAccepting, sendRich, editStatus, messageToHtml, doneNotice, rejectNotice, _test: { median, round2, CHECK_RE } };
