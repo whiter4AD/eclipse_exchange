@@ -6,6 +6,7 @@ const { esc, ce, sendRich } = quotes;
 const round2 = n => Math.round(n * 100) / 100;
 const fmt = n => Number(n).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const maskReq = r => String(r || '').replace(/\d{9,}/g, m => '•••• ' + m.slice(-4));
+const num = o => '#' + (o.code || o.id);   // публичный номер заявки, например #FG418ADF
 const opName = u => (u.username ? '@' + u.username : (u.first_name || 'оператор'));
 
 // ── Схема ─────────────────────────────────────────────────────────────────────
@@ -13,6 +14,19 @@ let ready = null;
 function initSchema(query) {
   if (!ready) ready = (async () => {
     const stmts = [
+      'ALTER TABLE orders ADD COLUMN IF NOT EXISTS code TEXT',
+      `CREATE OR REPLACE FUNCTION gen_order_code() RETURNS text AS $$
+        DECLARE c text; L text := 'ABCDEFGHJKLMNPQRSTUVWXYZ'; i int;
+        BEGIN LOOP
+          c := '';
+          FOR i IN 1..2 LOOP c := c || substr(L, 1 + floor(random()*24)::int, 1); END LOOP;
+          FOR i IN 1..3 LOOP c := c || floor(random()*10)::int::text; END LOOP;
+          FOR i IN 1..3 LOOP c := c || substr(L, 1 + floor(random()*24)::int, 1); END LOOP;
+          EXIT WHEN NOT EXISTS (SELECT 1 FROM orders WHERE code = c);
+        END LOOP; RETURN c; END $$ LANGUAGE plpgsql`,
+      'UPDATE orders SET code = gen_order_code() WHERE code IS NULL',
+      'CREATE UNIQUE INDEX IF NOT EXISTS orders_code_uq ON orders (code)',
+      'ALTER TABLE orders ALTER COLUMN code SET DEFAULT gen_order_code()',
       'ALTER TABLE orders ADD COLUMN IF NOT EXISTS accepted_at TIMESTAMPTZ',
       'ALTER TABLE orders ADD COLUMN IF NOT EXISTS finished_at TIMESTAMPTZ',
       'ALTER TABLE orders ADD COLUMN IF NOT EXISTS operator_id BIGINT',
@@ -38,7 +52,7 @@ function viewOrder(o, parts, extra = {}, admin = false) {
   const amount = o.amount != null ? Number(o.amount) : Number(o.usdt);
   const sent = round2(parts.filter(p => p.status === 'sent' || p.status === 'confirmed').reduce((a, p) => a + Number(p.amount), 0));
   const v = {
-    id: o.id, type: o.type, status: o.status, asset: o.asset || 'USDT', amount, rub: round2(total), rate: amount ? round2(total / amount) : null,
+    id: o.id, code: o.code || null, type: o.type, status: o.status, asset: o.asset || 'USDT', amount, rub: round2(total), rate: amount ? round2(total / amount) : null,
     high_check: !!o.high_check, created_at: o.created_at, accepted_at: o.accepted_at || null, finished_at: o.finished_at || null,
     decline_reason: o.decline_reason || null, operator: o.operator_name || null,
     requisites: admin ? o.requisites : maskReq(o.requisites),
@@ -81,7 +95,7 @@ function register(d) {
     const o = (await query("UPDATE orders SET status='done', finished_at=NOW() WHERE id=$1 AND status='accepted' RETURNING *", [orderId])).rows[0];
     if (!o) return null;
     await sys(orderId, 'Все переводы подтверждены — заявка выполнена. Спасибо!');
-    tell(o, `${ce('done')}Заявка №${o.id} выполнена!\n\n${ce('get')}${esc(fmt(o.rub))} ₽ выплачено на ваши реквизиты.`, `✅ Заявка №${o.id} выполнена!\n\n💴 ${fmt(o.rub)} ₽ выплачено на ваши реквизиты.`);
+    tell(o, `${ce('done')}Заявка ${num(o)} выполнена!\n\n${ce('get')}${esc(fmt(o.rub))} ₽ выплачено на ваши реквизиты.`, `✅ Заявка ${num(o)} выполнена!\n\n💴 ${fmt(o.rub)} ₽ выплачено на ваши реквизиты.`);
     return o;
   }
 
@@ -114,7 +128,7 @@ function register(d) {
     if (limited(String(m.user.tg_id))) return res.status(429).json({ error: 'Слишком часто, подождите минуту' });
     await query("INSERT INTO order_messages (order_id, sender, sender_name, text) VALUES ($1,'user',$2,$3)", [m.o.id, m.user.username ? '@' + m.user.username : (m.user.first_name || ''), text]);
     if (!throttled('u' + m.o.id, 30000))
-      tellAdmins(m.o.id, `<b>Сообщение по заявке №${m.o.id}</b>\n${esc(text)}`, `Сообщение по заявке №${m.o.id}\n${text}`);
+      tellAdmins(m.o.id, `<b>Сообщение по заявке ${num(m.o)}</b>\n${esc(text)}`, `Сообщение по заявке ${num(m.o)}\n${text}`);
     res.json({ success: true });
   }));
 
@@ -129,7 +143,7 @@ function register(d) {
     if (received) { await sys(m.o.id, `Клиент подтвердил получение ${fmt(p.amount)} ₽.`); await finalizeIfDone(m.o.id); }
     else {
       await sys(m.o.id, `Клиент отметил: перевод ${fmt(p.amount)} ₽ не пришёл.`);
-      tellAdmins(m.o.id, `${ce('rejected')}<b>Клиент не получил перевод</b>\nЗаявка №${m.o.id}, ${esc(fmt(p.amount))} ₽ — откройте чат`, `❌ Клиент не получил перевод\nЗаявка №${m.o.id}, ${fmt(p.amount)} ₽ — откройте чат`);
+      tellAdmins(m.o.id, `${ce('rejected')}<b>Клиент не получил перевод</b>\nЗаявка ${num(m.o)}, ${esc(fmt(p.amount))} ₽ — откройте чат`, `❌ Клиент не получил перевод\nЗаявка ${num(m.o)}, ${fmt(p.amount)} ₽ — откройте чат`);
     }
     res.json({ success: true });
   }));
@@ -162,15 +176,16 @@ function register(d) {
     else if (st === 'active') where.push("o.status IN ('pending','accepted')");
     const q = String(req.query.q || '').trim().toLowerCase().replace(/^[#№]/, '');
     if (q) {
-      if (/^\d+$/.test(q)) { p.push(Number(q)); where.push(`o.id=$${p.length}`); }
+      if (/^[a-z]{2}\d{3}[a-z]{3}$/.test(q)) { p.push(q.toUpperCase()); where.push(`o.code=$${p.length}`); }
+      else if (/^\d+$/.test(q)) { p.push(Number(q)); where.push(`o.id=$${p.length}`); }
       else { p.push('%' + q.replace(/^@/, '') + '%'); where.push(`(LOWER(COALESCE(u.username,'')) LIKE $${p.length} OR LOWER(COALESCE(u.first_name,'')) LIKE $${p.length})`); }
     }
-    const r = await query(`SELECT o.id, o.status, o.asset, o.amount, o.usdt, o.rub, o.high_check, o.created_at, o.operator_name,
+    const r = await query(`SELECT o.id, o.code, o.status, o.asset, o.amount, o.usdt, o.rub, o.high_check, o.created_at, o.operator_name,
         u.username AS u_username, u.first_name AS u_first_name,
         (SELECT sender FROM order_messages m WHERE m.order_id=o.id ORDER BY m.id DESC LIMIT 1) AS last_sender
       FROM orders o LEFT JOIN users u ON u.tg_id=o.tg_id WHERE ${where.join(' AND ')}
       ORDER BY CASE WHEN o.status='pending' THEN 0 WHEN o.status='accepted' THEN 1 ELSE 2 END, o.id DESC LIMIT 100`, p);
-    res.json({ orders: r.rows.map(o => ({ id: o.id, status: o.status, asset: o.asset || 'USDT', amount: Number(o.amount != null ? o.amount : o.usdt), rub: round2(Number(o.rub)),
+    res.json({ orders: r.rows.map(o => ({ id: o.id, code: o.code || null, status: o.status, asset: o.asset || 'USDT', amount: Number(o.amount != null ? o.amount : o.usdt), rub: round2(Number(o.rub)),
       high_check: !!o.high_check, created_at: o.created_at, operator: o.operator_name || null, user: o.u_username ? '@' + o.u_username : (o.u_first_name || '—'), last_sender: o.last_sender || null })) });
   }));
 
@@ -184,7 +199,7 @@ function register(d) {
     if (!o) return res.status(409).json({ error: 'Заявка уже обработана или не найдена' });
     await query("INSERT INTO order_parts (order_id, seq, amount, method) VALUES ($1,1,$2,'СБП')", [id, round2(Number(o.rub))]);
     await sys(id, 'Оператор принял заявку. Здесь вы можете написать ему и следить за выплатой.');
-    tell(o, `${ce('done')}Заявка №${id} принята — оператор уже на связи.\nСледите за выплатой в приложении.`, `✅ Заявка №${id} принята — оператор уже на связи.\nСледите за выплатой в приложении.`);
+    tell(o, `${ce('done')}Заявка ${num(o)} принята — оператор уже на связи.\nСледите за выплатой в приложении.`, `✅ Заявка ${num(o)} принята — оператор уже на связи.\nСледите за выплатой в приложении.`);
     res.json(await adminView(id));
   }));
 
@@ -195,7 +210,7 @@ function register(d) {
     if (!o) return res.status(409).json({ error: 'Заявка уже обработана или не найдена' });
     if (o.ref_tg_id && Number(o.ref_earn_usdt) > 0) await query('UPDATE users SET balance=balance-$1 WHERE tg_id=$2', [o.ref_earn_usdt, o.ref_tg_id]);
     await sys(id, 'Заявка отклонена' + (reason ? `: ${reason}` : '.'));
-    tell(o, `${ce('rejected')}Заявка №${id} отклонена.${reason ? '\nПричина: ' + esc(reason) : ''}\nЕсть вопросы — напишите в поддержку.`, `❌ Заявка №${id} отклонена.${reason ? '\nПричина: ' + reason : ''}\nЕсть вопросы — напишите в поддержку.`);
+    tell(o, `${ce('rejected')}Заявка ${num(o)} отклонена.${reason ? '\nПричина: ' + esc(reason) : ''}\nЕсть вопросы — напишите в поддержку.`, `❌ Заявка ${num(o)} отклонена.${reason ? '\nПричина: ' + reason : ''}\nЕсть вопросы — напишите в поддержку.`);
     res.json(await adminView(id));
   }));
 
@@ -259,7 +274,7 @@ function register(d) {
     const text = String((req.body && req.body.text) || '').trim().slice(0, 1000);
     if (!text) return res.status(400).json({ error: 'Пустое сообщение' });
     await query("INSERT INTO order_messages (order_id, sender, sender_name, text) VALUES ($1,'operator',$2,$3)", [id, opName(req.tgUser), text]);
-    if (!throttled('o' + id, 20000)) tell(o, `<b>Сообщение от оператора</b> по заявке №${id}\n${esc(text)}`, `Сообщение от оператора по заявке №${id}\n${text}`);
+    if (!throttled('o' + id, 20000)) tell(o, `<b>Сообщение от оператора</b> по заявке ${num(o)}\n${esc(text)}`, `Сообщение от оператора по заявке ${num(o)}\n${text}`);
     res.json({ success: true });
   }));
 }
