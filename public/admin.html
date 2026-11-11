@@ -139,6 +139,11 @@
   .balance-chip { display:inline-block; padding:3px 9px; border-radius:6px;
     background:var(--accent-dim); border:0.5px solid rgba(var(--accent-rgb),0.3);
     font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent); }
+  .o-row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:0.5px solid var(--border);font-size:13px}.o-row span{color:var(--text3)}.o-row b{text-align:right;word-break:break-word}
+  .o-card{margin:12px 20px 0;background:var(--bg2);border:0.5px solid var(--border2);border-radius:14px;padding:16px}
+  .o-btn{padding:10px 14px;border-radius:10px;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}.o-btn.pri{background:var(--accent);color:var(--on-accent);border:none}.o-btn.bad{background:var(--red-dim);color:var(--red)}
+  .o-in{width:100%;background:var(--bg3);border:0.5px solid var(--border2);border-radius:10px;padding:10px 12px;color:var(--text);font-family:inherit;font-size:13px;outline:none}
+  .o-msg{max-width:85%;padding:8px 12px;border-radius:14px;margin:5px 0;font-size:13px;line-height:1.4;word-break:break-word;white-space:pre-wrap}.o-msg.user{background:var(--bg4)}.o-msg.operator{background:var(--accent);color:var(--on-accent);margin-left:auto}.o-msg.system{color:var(--text3);font-size:11px;text-align:center;max-width:100%}
 </style>
 </head>
 <body>
@@ -160,6 +165,7 @@
     <div class="tab active" onclick="switchTab('stats')">📊 Стата</div>
     <div class="tab" onclick="switchTab('users')">👥 Юзеры</div>
     <div class="tab" onclick="switchTab('broadcast')">📢 Рассылка</div>
+    <div class="tab" onclick="switchTab('orders')">📋 Заявки</div>
   </div>
 
   <!-- STATS -->
@@ -213,6 +219,27 @@
     </div>
 
     <div id="users-pagination" style="display:flex;gap:8px;padding:12px 20px;justify-content:center"></div>
+  </div>
+
+  <div class="section" id="section-orders">
+    <div id="o-listview">
+      <div class="section-header">Заявки на обмен</div>
+      <div style="padding:0 20px 12px;display:flex;gap:8px">
+        <input class="o-in" id="o-q" placeholder="№ заявки или @ник" oninput="ordSearch()">
+        <select class="o-in" id="o-f" style="width:120px" onchange="ordList()"><option value="active">Активные</option><option value="pending">Ждут</option><option value="all">Все</option></select>
+      </div>
+      <div id="o-list"></div>
+    </div>
+    <div id="o-detailview" style="display:none">
+      <div style="padding:14px 20px 0"><button class="o-btn" onclick="ordBack()">← К списку</button></div>
+      <div class="o-card" id="o-info"></div>
+      <div class="o-card" id="o-act"></div>
+      <div class="o-card">
+        <div class="section-header" style="padding:0 0 8px">Чат с клиентом</div>
+        <div id="o-chat" style="max-height:300px;overflow-y:auto"></div>
+        <div id="o-msgrow" style="display:flex;gap:8px;margin-top:10px"><input class="o-in" id="o-msg" placeholder="Сообщение клиенту" onkeydown="if(event.key==='Enter')ordSend()"><button class="o-btn pri" onclick="ordSend()">→</button></div>
+      </div>
+    </div>
   </div>
 
   <!-- BROADCAST -->
@@ -278,11 +305,12 @@
   function switchTab(tab) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    const tabs = ['stats','users','broadcast'];
+    const tabs = ['stats','users','broadcast','orders'];
     document.querySelectorAll('.tab')[tabs.indexOf(tab)].classList.add('active');
     document.getElementById('section-' + tab).classList.add('active');
     if (tab === 'stats') loadStats();
     if (tab === 'users') loadUsers();
+    if (tab === 'orders') ordStart(); else ordStop();
   }
 
   // ── Stats ───────────────────────────────────────────────────────────────────
@@ -559,6 +587,109 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
   }
+
+  // ── Заявки ──────────────────────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+  const OE = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const OR = n => Number(n).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const OST = { pending:['Ждёт оператора','#F0A500'], accepted:['В работе','var(--accent)'], done:['Выполнена','var(--accent2)'], cancelled:['Отклонена','var(--red)'] };
+  const PST = { planned:'запланирован', sent:'ждёт подтверждения', confirmed:'получен ✅', disputed:'не пришёл ⚠️' };
+  let oTimer = null, oCur = null, oLast = 0, oSig = '', oSearchT = null;
+
+  function ordStart() { ordStop(); oCur ? ordLoad() : ordList(); oTimer = setInterval(() => oCur ? ordLoad() : ordList(), 5000); }
+  function ordStop() { clearInterval(oTimer); }
+  function ordSearch() { clearTimeout(oSearchT); oSearchT = setTimeout(ordList, 400); }
+
+  async function ordList() {
+    try {
+      const st = $('o-f').value, q = $('o-q').value.trim();
+      const d = await api('GET', `/api/admin/orders?status=${st === 'all' ? '' : st}&q=${encodeURIComponent(q)}`);
+      $('o-list').innerHTML = d.orders.length ? d.orders.map(o => {
+        const s = OST[o.status] || [o.status, ''];
+        return `<div class="user-item" style="cursor:pointer" onclick="ordOpen(${o.id})"><div class="user-info">
+          <div class="user-name">${o.high_check ? '⭐ ' : ''}№${o.id} · ${OE(o.user)}</div>
+          <div class="user-tag">${o.amount} ${OE(o.asset)} → ${OR(o.rub)} ₽</div>
+          <div style="margin-top:4px;font-size:11px;color:${s[1]}">${s[0]}${o.last_sender === 'user' ? ' · 💬 ждёт ответа' : ''}</div></div></div>`;
+      }).join('') : '<div class="empty-state">Заявок нет</div>';
+    } catch (e) { showToast(e.message, 'error'); }
+  }
+
+  function ordOpen(id) {
+    oCur = id; oLast = 0; oSig = ''; $('o-chat').innerHTML = '';
+    $('o-listview').style.display = 'none'; $('o-detailview').style.display = 'block';
+    ordLoad(); window.scrollTo(0, 0);
+  }
+  function ordBack() { oCur = null; $('o-detailview').style.display = 'none'; $('o-listview').style.display = 'block'; ordList(); }
+  function openCheck(e, url) { e.preventDefault(); if (tg && /^https:\/\/t\.me\//i.test(url) && tg.openTelegramLink) tg.openTelegramLink(url); else window.open(url, '_blank'); }
+
+  async function ordLoad() {
+    const id = oCur; if (!id) return;
+    try {
+      const v = await api('GET', '/api/admin/orders/' + id);
+      if (id !== oCur) return;
+      const s = OST[v.status] || [v.status, ''], u = v.user || {};
+      const open = v.status === 'pending' || v.status === 'accepted';
+      $('o-info').innerHTML = `<div style="font-size:16px;font-weight:700;margin-bottom:6px">${v.high_check ? '⭐ ' : ''}Заявка №${v.id} <span style="font-size:12px;color:${s[1]}">${s[0]}</span></div>
+        <div class="o-row"><span>Клиент</span><b>${u.username ? '@' + OE(u.username) : OE(u.first_name || '—')} · ${u.tg_id}</b></div>
+        <div class="o-row"><span>Отдаёт</span><b>${v.amount} ${OE(v.asset)}</b></div>
+        <div class="o-row"><span>Курс</span><b>${v.rate ? OR(v.rate) : '—'}</b></div>
+        <div class="o-row"><span>К выплате</span><b>${OR(v.rub)} ₽</b></div>
+        <div class="o-row"><span>Отправлено</span><b>${OR(v.sent_total)} ₽ · осталось ${OR(v.remaining)} ₽</b></div>
+        <div class="o-row"><span>Реквизиты</span><b style="user-select:all">${OE(v.requisites)}</b></div>
+        <div class="o-row"><span>Чек</span><b><a href="${OE(v.check_url)}" style="color:var(--accent)" onclick="openCheck(event,this.href)">открыть</a></b></div>
+        ${v.operator ? `<div class="o-row"><span>Оператор</span><b>${OE(v.operator)}</b></div>` : ''}
+        ${v.decline_reason ? `<div class="o-row"><span>Причина отказа</span><b>${OE(v.decline_reason)}</b></div>` : ''}`;
+
+      // блок действий перерисовываем только при изменении, чтобы не стирать введённый текст
+      const sig = JSON.stringify([v.status, v.parts.map(p => [p.id, p.status, p.amount])]);
+      if (sig !== oSig) {
+        oSig = sig;
+        const anyDone = v.parts.some(p => p.status !== 'planned'), sentNow = v.parts.some(p => p.status === 'sent');
+        const firstPl = v.parts.find(p => p.status === 'planned');
+        const declineBox = `<input class="o-in" id="o-reason" placeholder="Причина отказа (увидит клиент)" style="margin-bottom:8px"><button class="o-btn bad" onclick="ordDecline()">❌ Отклонить заявку</button>`;
+        let h = '';
+        if (v.status === 'pending') h = `<button class="o-btn pri" style="width:100%;margin-bottom:12px" onclick="oPost('/accept')">✅ Принять заявку</button>${declineBox}`;
+        else if (v.status === 'accepted') {
+          h = `<div class="section-header" style="padding:0 0 8px">Переводы клиенту</div>` + v.parts.map(p => {
+            const canSend = !sentNow && (p.status === 'disputed' || (p.status === 'planned' && firstPl && firstPl.id === p.id));
+            const canForce = p.status === 'sent' || p.status === 'disputed';
+            return `<div class="o-row"><span>${p.n} из ${v.parts.length} · ${OR(p.amount)} ₽<br><small>${PST[p.status] || p.status}</small></span><b>
+              ${canSend ? `<button class="o-btn pri" onclick="oPost('/parts/${p.id}/sent')">Отправил</button>` : ''}
+              ${canForce ? `<button class="o-btn" onclick="oPost('/parts/${p.id}/force')">Получен вручную</button>` : ''}</b></div>`;
+          }).join('');
+          if (firstPl) h += `<div style="margin-top:12px"><input class="o-in" id="o-plan" placeholder="Разбить остаток: 10000 5000 (остаток — последним)"><button class="o-btn" style="margin-top:8px" onclick="ordPlan()">Разбить на переводы</button></div>`;
+          if (!anyDone) h += `<div style="margin-top:14px">${declineBox}</div>`;
+        } else h = '<div style="font-size:13px;color:var(--text3)">Заявка закрыта</div>';
+        $('o-act').innerHTML = h;
+        $('o-msgrow').style.display = open ? 'flex' : 'none';
+      }
+
+      const m = await api('GET', `/api/admin/orders/${id}/messages?after=${oLast}`);
+      if (m.messages.length) {
+        const box = $('o-chat'), near = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+        box.insertAdjacentHTML('beforeend', m.messages.map(x => `<div class="o-msg ${OE(x.sender)}">${OE(x.text)}</div>`).join(''));
+        oLast = m.messages[m.messages.length - 1].id;
+        if (near || oLast === m.messages[0].id) box.scrollTop = box.scrollHeight;
+      }
+    } catch (e) { if (oCur === id) showToast(e.message, 'error'); }
+  }
+
+  async function oPost(path, body) {
+    try { await api('POST', `/api/admin/orders/${oCur}${path}`, body || {}); oSig = ''; await ordLoad(); return true; }
+    catch (e) { showToast(e.message, 'error'); return false; }
+  }
+  const ordDecline = () => oPost('/decline', { reason: ($('o-reason').value || '').trim() });
+  function ordPlan() {
+    const amounts = $('o-plan').value.split(/[\s,;]+/).filter(Boolean).map(Number);
+    if (!amounts.length) return showToast('Укажите суммы переводов', 'error');
+    oPost('/plan', { amounts });
+  }
+  async function ordSend() {
+    const t = $('o-msg').value.trim(); if (!t) return;
+    $('o-msg').value = '';
+    if (!(await oPost('/messages', { text: t }))) $('o-msg').value = t;
+  }
+  { const q = new URLSearchParams(location.search).get('order'); if (/^\d+$/.test(q || '')) { switchTab('orders'); ordOpen(Number(q)); } }
 
   // Init
   loadStats();
