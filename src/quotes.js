@@ -387,10 +387,10 @@ async function getGreetingData(query, bot, user, getEffectiveRate) {
 // Кастомные эмодзи (ID можно переопределить переменной EMOJI_<ИМЯ>, пустое значение отключает одно, CUSTOM_EMOJI=off — все)
 const EMOJI_IDS = { title: '5893365462837760511', open: '5447464938874348535', closed: '5246821534437221767', usdt: '5893473283696759404',
   ton: '5260681660189408650', payout: '5893450623449305489', operators: '5902335789798265487', admin: '5445033158456145975',
-  btn: '5895652322469482989', user: '5902335789798265487', give: '5406920593629024429', get: '5406730197728790719', requisites: '5902056028513505203',
+  btn: '5895652322469482989', id: '5226573147343449978', user: '5902335789798265487', give: '5406920593629024429', get: '5406730197728790719', requisites: '5902056028513505203',
   check: '5444961234933806330', time: '5902050947567194830', done: '5447464938874348535', rejected: '5246821534437221767' };
 const EMOJI_FALLBACK = { title: '🌑', open: '🟢', closed: '🔴', usdt: '💵', ton: '💎', payout: '✈️', operators: '👤', admin: '🛡',
-  btn: '🌑', user: '👤', give: '💵', get: '💴', requisites: '🏦', check: '🔗', time: '⏰', done: '✅', rejected: '❌' };
+  btn: '🌑', id: '🆔', user: '👤', give: '💵', get: '💴', requisites: '🏦', check: '🔗', time: '⏰', done: '✅', rejected: '❌' };
 function emojiId(key) {
   if ((process.env.CUSTOM_EMOJI || '').toLowerCase() === 'off') return null;
   const env = process.env['EMOJI_' + key.toUpperCase()];
@@ -449,9 +449,9 @@ function managerOrderTexts({ hc, asset, user, order, amount, usdtEq, rub, rate, 
   const get = `${Math.round(rub).toLocaleString('ru-RU')} ₽ (курс ${rate.toFixed(2)})`;
   const time = formatMskTime(order.created_at);
   return {
-    plain: `${hc ? '⭐ HIGH-CHECK · приоритет\n\n' : ''}🔄 Продажа ${asset} → ₽\n\n👤 ${tag} (${user.first_name || ''})\n🆔 Заявка: #${order.id}\n` +
+    plain: `${hc ? '⭐ HIGH-CHECK · приоритет\n\n' : ''}🔄 Продажа ${asset} → ₽\n\n👤 ${tag} (${user.first_name || ''})\n🆔 Заявка: #${order.code || order.id}\n` +
       `💵 Отдаёт: ${give}\n💴 Получает: ${get}\n🏦 Реквизиты: ${requisites}\n🔗 Чек: ${check}\n⏰ ${time}`,
-    html: `${hc ? '⭐ HIGH-CHECK · приоритет\n\n' : ''}${ce('title')}Продажа ${asset} → ₽\n\n${ce('user')}${esc(tag)} (${esc(user.first_name || '')})\n🆔 Заявка: #${order.id}\n` +
+    html: `${hc ? '⭐ HIGH-CHECK · приоритет\n\n' : ''}${ce('title')}Продажа ${asset} → ₽\n\n${ce('user')}${esc(tag)} (${esc(user.first_name || '')})\n${ce('id')}Заявка: #${order.code || order.id}\n` +
       `${ce('give')}Отдаёт: ${esc(give)}\n${ce('get')}Получает: ${esc(get)}\n${ce('requisites')}Реквизиты: ${esc(requisites)}\n${ce('check')}Чек: ${esc(check)}\n${ce('time')}${esc(time)}`,
   };
 }
@@ -462,12 +462,12 @@ function doneNotice(order, isCryptoDeposit) {
   const [text, key, plainEmoji] = order.type === 'exchange' ? [`${n} ₽ отправлены на ваши реквизиты.`, 'get', '💴']
     : order.type === 'withdrawal' ? [`Чек на ${Number(order.usdt)} USDT отправлен вам в Telegram.`, 'get', '💵']
     : isCryptoDeposit ? [`${Number(order.usdt)} USDT зачислены на ваш баланс.`, 'get', '💵'] : [null];
-  if (!text) return { plain: `✅ Заявка #${order.id} выполнена!\n\n✅ Ваша заявка выполнена!`, html: `${ce('done')}Заявка #${order.id} выполнена!\n\n${ce('done')}Ваша заявка выполнена!` };
-  return { plain: `✅ Заявка #${order.id} выполнена!\n\n${plainEmoji} ${text}`, html: `${ce('done')}Заявка #${order.id} выполнена!\n\n${ce(key)}${esc(text)}` };
+  if (!text) return { plain: `✅ Заявка #${order.code || order.id} выполнена!\n\n✅ Ваша заявка выполнена!`, html: `${ce('done')}Заявка #${order.code || order.id} выполнена!\n\n${ce('done')}Ваша заявка выполнена!` };
+  return { plain: `✅ Заявка #${order.code || order.id} выполнена!\n\n${plainEmoji} ${text}`, html: `${ce('done')}Заявка #${order.code || order.id} выполнена!\n\n${ce(key)}${esc(text)}` };
 }
 const rejectNotice = order => ({
-  plain: `❌ Заявка #${order.id} отклонена.\nЕсть вопросы — напишите менеджеру.`,
-  html: `${ce('rejected')}Заявка #${order.id} отклонена.\nЕсть вопросы — напишите менеджеру.`,
+  plain: `❌ Заявка #${order.code || order.id} отклонена.\nЕсть вопросы — напишите менеджеру.`,
+  html: `${ce('rejected')}Заявка #${order.code || order.id} отклонена.\nЕсть вопросы — напишите менеджеру.`,
 });
 
 // Операторы: MANAGER_CHAT_ID + необязательный список ADMIN_IDS через запятую
