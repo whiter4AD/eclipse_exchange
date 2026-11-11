@@ -225,7 +225,7 @@
     <div id="o-listview">
       <div class="section-header">Заявки на обмен</div>
       <div style="padding:0 20px 12px;display:flex;gap:8px">
-        <input class="o-in" id="o-q" placeholder="№ заявки или @ник" oninput="ordSearch()">
+        <input class="o-in" id="o-q" placeholder="Код (FG418ADF) или @ник" oninput="ordSearch()">
         <select class="o-in" id="o-f" style="width:120px" onchange="ordList()"><option value="active">Активные</option><option value="pending">Ждут</option><option value="all">Все</option></select>
       </div>
       <div id="o-list"></div>
@@ -607,7 +607,7 @@
       $('o-list').innerHTML = d.orders.length ? d.orders.map(o => {
         const s = OST[o.status] || [o.status, ''];
         return `<div class="user-item" style="cursor:pointer" onclick="ordOpen(${o.id})"><div class="user-info">
-          <div class="user-name">${o.high_check ? '⭐ ' : ''}№${o.id} · ${OE(o.user)}</div>
+          <div class="user-name">${o.high_check ? '⭐ ' : ''}#${o.code || o.id} · ${OE(o.user)}</div>
           <div class="user-tag">${o.amount} ${OE(o.asset)} → ${OR(o.rub)} ₽</div>
           <div style="margin-top:4px;font-size:11px;color:${s[1]}">${s[0]}${o.last_sender === 'user' ? ' · 💬 ждёт ответа' : ''}</div></div></div>`;
       }).join('') : '<div class="empty-state">Заявок нет</div>';
@@ -629,7 +629,7 @@
       if (id !== oCur) return;
       const s = OST[v.status] || [v.status, ''], u = v.user || {};
       const open = v.status === 'pending' || v.status === 'accepted';
-      $('o-info').innerHTML = `<div style="font-size:16px;font-weight:700;margin-bottom:6px">${v.high_check ? '⭐ ' : ''}Заявка №${v.id} <span style="font-size:12px;color:${s[1]}">${s[0]}</span></div>
+      $('o-info').innerHTML = `<div style="font-size:16px;font-weight:700;margin-bottom:6px">${v.high_check ? '⭐ ' : ''}Заявка #${v.code || v.id} <span style="font-size:12px;color:${s[1]}">${s[0]}</span></div>
         <div class="o-row"><span>Клиент</span><b>${u.username ? '@' + OE(u.username) : OE(u.first_name || '—')} · ${u.tg_id}</b></div>
         <div class="o-row"><span>Отдаёт</span><b>${v.amount} ${OE(v.asset)}</b></div>
         <div class="o-row"><span>Курс</span><b>${v.rate ? OR(v.rate) : '—'}</b></div>
