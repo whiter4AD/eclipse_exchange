@@ -1079,7 +1079,7 @@
       const d = new Date(o.created_at);
       if (from && d < from) return false;
       if (to && d > to) return false;
-      if (q && ![o.id, o.requisites, Number(o.usdt) || '', Math.round(Number(o.rub)) || ''].map(norm).join('|').includes(q)) return false;
+      if (q && ![o.id, o.code, o.requisites, Number(o.usdt) || '', Math.round(Number(o.rub)) || ''].map(norm).join('|').includes(q)) return false;
       return true;
     });
     const box = document.getElementById('orders-list');
@@ -1095,7 +1095,7 @@
       const [stLabel, stClass] = STATUS_MAP[o.status] || [o.status, 'pending'];
       const amount = o.type === 'buy' ? `+${Number(o.usdt).toFixed(2)} USDT` : o.type === 'exchange' ? `${Math.round(Number(o.rub)).toLocaleString('ru-RU')} ₽` : `${Number(o.usdt).toFixed(2)} USDT`;
       const dt = new Date(o.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-      return `<div class="order-item"${o.type === 'exchange' ? ` onclick="openOrder(${o.id})" style="cursor:pointer"` : ''}><div><div class="order-type">${o.type === 'exchange' && o.asset === 'TON' ? 'Продажа TON → ₽' : (TYPE_MAP[o.type] || 'Заявка')}</div><div class="order-date">№${o.id} · ${dt}</div></div>
+      return `<div class="order-item"${o.type === 'exchange' ? ` onclick="openOrder(${o.id})" style="cursor:pointer"` : ''}><div><div class="order-type">${o.type === 'exchange' && o.asset === 'TON' ? 'Продажа TON → ₽' : (TYPE_MAP[o.type] || 'Заявка')}</div><div class="order-date">#${o.code || o.id} · ${dt}</div></div>
         <div style="text-align:right"><div class="order-amount sensitive">${amount}</div><div class="order-status ${stClass}">${stLabel}</div></div></div>`;
     }).join('');
   }
@@ -1292,7 +1292,7 @@
   function openOrder(id) {
     ovId = id; ovJson = ''; ovData = null; chatSeen = 0;
     $('ov').style.display = 'flex'; document.body.classList.add('ov-open');
-    $('ov-title').textContent = 'Заявка №' + id;
+    $('ov-title').textContent = 'Заявка';
     $('ov-body').innerHTML = '<div class="ov-wait"><div class="ov-spin"></div></div>';
     loadOrderView(); clearInterval(ovTimer); ovTimer = setInterval(loadOrderView, 3000);
   }
@@ -1312,7 +1312,7 @@
     } catch (e) { if (/не найдена/.test(e.message)) closeOrder(); }
   }
   function renderOrderView(o) {
-    $('ov-title').textContent = 'Заявка №' + o.id;
+    $('ov-title').textContent = 'Заявка #' + (o.code || o.id);
     const [bl, bc] = OSTATUS[o.status] || [o.status, 'wait'];
     const coin = `<span class="xc-coin${o.asset === 'TON' ? ' ton' : ''}">${o.asset === 'TON' ? TON_SVG : '₮'}</span>`;
     const [ti, td] = fmtMoney(o.rub).split(',');
@@ -1383,7 +1383,7 @@
       const b = $('active-order');
       if (!a) { b.style.display = 'none'; return; }
       b.style.display = 'flex'; b.dataset.id = a.id;
-      $('ao-title').textContent = `Заявка №${a.id} · ${a.status === 'pending' ? 'ожидает оператора' : 'выплата в процессе'}`;
+      $('ao-title').textContent = `Заявка #${a.code || a.id} · ${a.status === 'pending' ? 'ожидает оператора' : 'выплата в процессе'}`;
       $('ao-sub').textContent = `${a.asset || 'USDT'} ${Number(a.amount != null ? a.amount : a.usdt)} → ${Math.round(Number(a.rub)).toLocaleString('ru-RU')} ₽`;
     } catch (e) {}
   }
